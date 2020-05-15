@@ -1,0 +1,24 @@
+{
+  "image_folder" : "data/images",
+  "label_folder": "data/label_images",
+  "max_x_steps": 4,
+  "max_y_steps": 4,
+  "ref_im_scale": 0.8,
+  "lw": 5,
+  "im_order": "RGB",
+  "theta": 40,
+  "n_iter": 10,
+  "compat_col": 40,
+  "scale": 5,
+  "prob": 0.4,
+  "classes": {
+   "Surf_Swash": "#fcf9f9",
+   "Water": "#3b81d0",
+   "BareSand": "#c0d03b",
+   "Grass_Shrub": "#62894d",
+   "WoodyVeg": "#395c27",
+   "MarshPlatform": "#94925c",
+   "Road": "#888c8c",
+   "Anthro": "#23ad96"
+ }
+}
