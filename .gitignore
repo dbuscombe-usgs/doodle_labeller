@@ -1,0 +1,3 @@
+build/doodler/*
+dist/*
+doodler.spec

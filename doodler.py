@@ -1,3 +1,9 @@
+# "Doodle Labeller"
+#
+# > Daniel Buscombe, Marda Science daniel@mardascience.com
+#
+# > Significant code contribution from LCDR Brodie Wells, Naval Postgraduate school Monterey
+# > Sample image provided by Christine Kranenburg , USGS St. Petersburg Coastal and Marine Science Center
 
 import time
 import subprocess, ctypes
@@ -10,8 +16,8 @@ import matplotlib
 
 import pydensecrf.densecrf as dcrf
 from pydensecrf.utils import create_pairwise_bilateral, unary_from_labels
-from skimage.filters.rank import median
-from skimage.morphology import disk
+#from skimage.filters.rank import median
+#from skimage.morphology import disk
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -88,7 +94,7 @@ def DoCrf(o_img, out, config, name, counter):
                             out.astype('int'),
                             config['classes'])
 
-    res = median(res, disk(6))
+    #res = median(res, disk(6))
 
     Lcorig = out.copy().astype('float')
     Lcorig[Lcorig<1] = np.nan

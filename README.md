@@ -22,13 +22,13 @@ You will need seperate folders for:
 * Where to get the images that you want to label `data/images`. The program will assume you want to label all these images in one go. It's usually best to put one image in there at a time at first while you get a feel for how long it takes
 * Where to put a labelled images (annotation files in `.npy` format, the label images in png format, and a plot showing the image and label in png format)
 
-### Make a config file
+### Make a config.json file
 Example is provided
 
 `
 {
-  "image_folder" : "data_dan/images",
-  "label_folder": "data_dan/label_images",
+  "image_folder" : "data/images",
+  "label_folder": "data/label_images",
   "max_x_steps": 4,
   "max_y_steps": 4,
   "ref_im_scale": 0.8,
@@ -67,6 +67,7 @@ where
 "prob": 0.4,
 "classes": a dictionary of class names and associated colors as hex codes. there are various online color pickers including this one: https://htmlcolorcodes.com/
 
+This file must be called `config.json`
 
 ### Run
 If you are running this through command line, you will need to cd to the
@@ -97,6 +98,15 @@ decrease the brush width with + / -. You can also undo a mistake with z.
 After you have labeled each image tile for each image, the program will automatically use the CRF algorithm to
 carry out dense (i.e. per-pixel) labelling based on the labels you provided and the underlying image
 
+
+## compiling doodler.py
+- conda activate doodler
+- pip install --upgrade 'setuptools<45.0.0'
+- pip install python-opencv-headless
+- pip install pyinstaller
+- pyinstaller --onefile --noconfirm doodler.py --clean --hidden-import pydensecrf.eigen
+- conda deactivate
+- ./dist/doodler
 
 ## Improvements coming soon
 * support for geotiffs
