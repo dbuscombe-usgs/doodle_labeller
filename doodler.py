@@ -1,7 +1,8 @@
 
 import time
 import subprocess, ctypes
-import os, sys, getopt, json
+import os, json
+import sys, getopt
 import cv2
 import numpy as np
 from glob import glob
@@ -484,20 +485,20 @@ def StepCalc(im_shape, max_x_steps=None, max_y_steps=None):
 #===============================================================
 if __name__ == '__main__':
 
-    argv = sys.argv[1:]
-    try:
-        opts, args = getopt.getopt(argv,"h:c:")
-    except getopt.GetoptError:
-        print('python doodler.py -c configfile.json')
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt == '-h':
-            print('Example usage: python doodler.py -c config.json')
-            sys.exit()
-        elif opt in ("-c"):
-            configfile = arg
+    # argv = sys.argv[1:]
+    # try:
+    #     opts, args = getopt.getopt(argv,"h:c:")
+    # except getopt.GetoptError:
+    #     print('python doodler.py -c configfile.json')
+    #     sys.exit(2)
+    # for opt, arg in opts:
+    #     if opt == '-h':
+    #         print('Example usage: python doodler.py -c config.json')
+    #         sys.exit()
+    #     elif opt in ("-c"):
+    #         configfile = arg
 
-    #configfile = 'config.json'
+    configfile = 'config.json'
     # load the user configs
     with open(os.getcwd()+os.sep+configfile) as f:
         config = json.load(f)
