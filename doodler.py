@@ -31,7 +31,7 @@ def PlotAndSave(img, resr, name, config, class_str):
 
     cv2.imwrite(outfile,
                 np.round(255*(resr/np.max(resr))).astype('uint8'))
-					
+
     alpha_percent = 0.3
 
     cmap = colors.ListedColormap(list(config['classes'].values()))
@@ -42,7 +42,7 @@ def PlotAndSave(img, resr, name, config, class_str):
     ax1.get_yaxis().set_visible(False)
 
     _ = ax1.imshow(img)
-			  
+
     im2 = ax1.imshow(resr,
                      cmap=cmap,
                      alpha=alpha_percent, interpolation='nearest',
@@ -61,7 +61,7 @@ def PlotAndSave(img, resr, name, config, class_str):
 
 
 # =========================================================
-def DoCrf(file, config, name): 
+def DoCrf(file, config, name):
     data = np.load(file)
     res = getCRF(data['image'],
                             data['label'].astype('int'),
@@ -75,7 +75,7 @@ def getCRF(img, Lc, label_lines):
          img = np.dstack((img, img, img))
     H = img.shape[0]
     W = img.shape[1]
-	
+
     d = dcrf.DenseCRF2D(H, W, len(label_lines) + 1)
     U = unary_from_labels(Lc.astype('int'),
                           len(label_lines) + 1,
@@ -85,14 +85,14 @@ def getCRF(img, Lc, label_lines):
     # to add the color-independent term, where features are the locations only:
     d.addPairwiseGaussian(sxy=(config['theta_spat'], config['theta_spat']), compat=config['compat_spat'], kernel=dcrf.DIAG_KERNEL,
                           normalization=dcrf.NORMALIZE_SYMMETRIC)
-	
+
     feats = create_pairwise_bilateral(sdims=(config['theta_col'], config['theta_col']),
                                       schan=(config['scale'],
                                              config['scale'],
                                              config['scale']),
                                       img=img,
                                       chdim=2)
-									  
+
     d.addPairwiseEnergy(feats, compat=config['compat_col'],
                         kernel=dcrf.DIAG_KERNEL,
                         normalization=dcrf.NORMALIZE_SYMMETRIC)
@@ -241,7 +241,7 @@ class MaskPainter():
             cv2.rectangle(ref_img,
                           (self.Z[ck][2], self.Z[ck][0]),
                           (self.Z[ck][3], self.Z[ck][1]),
-                          (255, 255, 0), 2)
+                          (255, 255, 0), 20)
 
             cv2.namedWindow('whole image', cv2.WINDOW_NORMAL)
             cv2.imshow('whole image', ref_img)
@@ -252,7 +252,7 @@ class MaskPainter():
             if not lab:
                 counter = 1   # Label number
             sm = 0        # Enhancement variable
-            if np.std(self.im_sect) > 0:
+            if 2 > 1: #np.std(self.im_sect) > 0:
                 s = np.shape(self.im_sect[:, :, 2])
                 if not lab:
                     # TODO: Lc should never be set to zeros!!
@@ -338,16 +338,16 @@ class MaskPainter():
                     self.class_mask[self.Z[ck][0]:self.Z[ck][1],
                                     self.Z[ck][2]:self.Z[ck][3], :] = Lc
                     lab = False
-            else:
-                if self.config['auto_class'] == "No":
-                    ac = 0
-                else:
-                    ac = list(self.config['classes'].keys()).index('BackGrnd') + 1
-                self.class_mask[self.Z[ck][0]:self.Z[ck][1],
-                                self.Z[ck][2]:self.Z[ck][3], :] = \
-                    np.ones((self.im_sect.shape[0],
-                            self.im_sect.shape[1],
-                            self.class_mask.shape[2])) * ac
+            # else:
+            #     if self.config['auto_class'] == "No":
+            #         ac = 0
+            #     else:
+            #         ac = list(self.config['classes'].keys()).index('BackGrnd') + 1
+            #     self.class_mask[self.Z[ck][0]:self.Z[ck][1],
+            #                     self.Z[ck][2]:self.Z[ck][3], :] = \
+            #         np.ones((self.im_sect.shape[0],
+            #                 self.im_sect.shape[1],
+            #                 self.class_mask.shape[2])) * ac
 
             cv2.destroyWindow('whole image')
             ck += 1
@@ -488,15 +488,26 @@ if __name__ == '__main__':
     files = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*.*')))
 
     N = []
-	
+
     #N.append(files[0].split(os.sep)[-1].split('.')[0])
     # print(N)
-	
+
+    # masks are binary labels where the null class is zero
+    masks = []
+    if config["apply_mask"]!='None':
+        for k in config["apply_mask"].keys():
+            masks.append((OpenImage(config["apply_mask"][k], None)[:,:,0]==0).astype('int'))
+
+
     counter = 1
     for f in files:
 
         start, screen_size = TimeScreen()
         o_img = OpenImage(f, config['im_order'])
+
+        if masks:
+            for k in masks:
+                o_img[k==1] = 0
 
         name = f.split(os.sep)[-1].split('.')[0] #assume no dots in file name
         N.append(name)
@@ -506,7 +517,7 @@ if __name__ == '__main__':
         out = out.astype('int')
         nx, ny = np.shape(out)
         gridy, gridx = np.meshgrid(np.arange(ny), np.arange(nx))
-		
+
         counter = 0
         for ind in Z:
            np.savez(config['label_folder']+os.sep+name+"_tmp"+str(counter)+"_"+class_str+".npz", label=out[ind[0]:ind[1], ind[2]:ind[3]], image=o_img[ind[0]:ind[1], ind[2]:ind[3]], grid_x=gridx[ind[0]:ind[1], ind[2]:ind[3]], grid_y=gridy[ind[0]:ind[1], ind[2]:ind[3]])
@@ -518,7 +529,7 @@ if __name__ == '__main__':
 
     counter += 1
     print("Sparse labelling complete ...")
-	
+
 
     for name in N:
         print("Dense labelling ... this may take a while")
@@ -531,17 +542,17 @@ if __name__ == '__main__':
         l = np.load(l)
         nx, ny = np.shape(l)
         del l
-		
+
         resr = np.zeros((nx, ny))
 
         for k in range(len(o)):
-           l = np.load(label_files[k])	
+           l = np.load(label_files[k])
            resr[l['grid_x'], l['grid_y']] =o[k]
         del o, l
-		
+
         imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
         img = OpenImage(imfile, config['im_order'])
-		
+
         PlotAndSave(img.copy(), resr, name, config, class_str)
 
         for f in label_files:
