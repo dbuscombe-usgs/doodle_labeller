@@ -1,8 +1,10 @@
 # "Doodle Labeller"
 #
 # > Daniel Buscombe, Marda Science daniel@mardascience.com
+# > USGS Pacific Marine Science Center
 #
-# > Significant code contribution from LCDR Brodie Wells, Naval Postgraduate school Monterey
+# Based on the old "dl-tools" labelling code (https://github.com/dbuscombe-usgs/dl_tools/tree/master/create_groundtruth)
+# > Incorporating some of the code contribution from LCDR Brodie Wells, Naval Postgraduate school Monterey
 # > Sample image provided by Christine Kranenburg , USGS St. Petersburg Coastal and Marine Science Center
 
 import time
@@ -12,123 +14,166 @@ import sys, getopt
 import cv2
 import numpy as np
 from glob import glob
-import matplotlib
 
 import pydensecrf.densecrf as dcrf
 from pydensecrf.utils import create_pairwise_bilateral, unary_from_labels
-#from skimage.filters.rank import median
-#from skimage.morphology import disk
+from skimage.filters.rank import median
+from skimage.morphology import disk
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from numpy.lib.stride_tricks import as_strided as ast
+from joblib import Parallel, delayed
 
 # =========================================================
+def norm_shape(shap):
+   '''
+   Normalize numpy array shapes so they're always expressed as a tuple,
+   even for one-dimensional shapes.
+   '''
+   try:
+      i = int(shap)
+      return (i,)
+   except TypeError:
+      # shape was not a number
+      pass
 
-def FlipAxForMPL(img):
-    r = img[:,:,0]
-    g = img[:,:,1]
-    b = img[:,:,2]
-    newim = np.dstack([b, g, r])
-    return newim
+   try:
+      t = tuple(shap)
+      return t
+   except TypeError:
+      # shape was not iterable
+      pass
+
+   raise TypeError('shape must be an int, or a tuple of ints')
 
 # =========================================================
-def PlotAndSave(img, resr, crf_output, name, config, counter):
-    mpl_im = FlipAxForMPL(img.copy())
+# Return a sliding window over a in any number of dimensions
+# version with no memory mapping
+def sliding_window(a,ws,ss = None,flatten = True):
+    '''
+    Return a sliding window over a in any number of dimensions
+    '''
+    if None is ss:
+        # ss was not provided. the windows will not overlap in any direction.
+        ss = ws
+    ws = norm_shape(ws)
+    ss = norm_shape(ss)
+    # convert ws, ss, and a.shape to numpy arrays
+    ws = np.array(ws)
+    ss = np.array(ss)
+    shap = np.array(a.shape)
+    # ensure that ws, ss, and a.shape all have the same number of dimensions
+    ls = [len(shap),len(ws),len(ss)]
+    if 1 != len(set(ls)):
+        raise ValueError(\
+        'a.shape, ws and ss must all have the same length. They were %s' % str(ls))
 
-    sp = 120
+    # ensure that ws is smaller than a in every dimension
+    if np.any(ws > shap):
+        raise ValueError(\
+        'ws cannot be larger than a in any dimension.\
+ a.shape was %s and ws was %s' % (str(a.shape),str(ws)))
+    # how many slices will there be in each dimension?
+    newshape = norm_shape(((shap - ws) // ss) + 1)
+    # the shape of the strided array will be the number of slices in each dimension
+    # plus the shape of the window (tuple addition)
+    newshape += norm_shape(ws)
+    # the strides tuple will be the array's strides multiplied by step size, plus
+    # the array's strides (tuple addition)
+    newstrides = norm_shape(np.array(a.strides) * ss) + a.strides
+    a = ast(a,shape = newshape,strides = newstrides)
+    if not flatten:
+        return a
+    # Collapse strided so that it has one more dimension than the window.  I.e.,
+    # the new array is a flat list of slices.
+    meat = len(ws) if ws.shape else 0
+    firstdim = (np.product(newshape[:-meat]),) if ws.shape else ()
+    dim = firstdim + (newshape[-meat:])
+    # remove any dimensions with size 1
+    #dim = filter(lambda i : i != 1,dim)
 
-    a_label = 'a) Input'
-    b_label = 'b) CRF prediction'
-    c_label = 'b) CRF prediction'
-    alpha_percent = 0.4
+    return a.reshape(dim), newshape
+
+# =========================================================
+def PlotAndSave(img, resr, name, config, class_str):
+
+    outfile = config['label_folder']+os.sep+name+"_"+class_str+'_label.png'
+
+    cv2.imwrite(outfile,
+                np.round(255*(resr/np.max(resr))).astype('uint8'))
+					
+    alpha_percent = 0.3
 
     cmap = colors.ListedColormap(list(config['classes'].values()))
 
     fig = plt.figure()
-    fig.subplots_adjust(wspace=0.4)
-    ax1 = fig.add_subplot(sp + 1)
+    ax1 = fig.add_subplot(111) #sp + 1)
     ax1.get_xaxis().set_visible(False)
     ax1.get_yaxis().set_visible(False)
 
-    _ = ax1.imshow(mpl_im)
-    plt.title(a_label, loc='left', fontsize=12)
-
-    ax1 = fig.add_subplot(122)
-    ax1.get_xaxis().set_visible(False)
-    ax1.get_yaxis().set_visible(False)
-
-    _ = ax1.imshow(mpl_im)
-    plt.title(c_label,
-              loc='left',
-              fontsize=12)
+    _ = ax1.imshow(img)
+			  
     im2 = ax1.imshow(resr,
                      cmap=cmap,
-                     alpha=alpha_percent,
+                     alpha=alpha_percent, interpolation='nearest',
                      vmin=0, vmax=len(config['classes']))
     divider = make_axes_locatable(ax1)
     cax = divider.append_axes("right", size="5%")
     cb=plt.colorbar(im2, cax=cax)
     cb.set_ticks(0.5 + np.arange(len(config['classes']) + 1))
-    cb.ax.set_yticklabels(config['classes'])
-    #cb.ax.tick_config(labelsize=4)
+    cb.ax.set_yticklabels(config['classes'], fontsize=6)
 
-    outfile = config['label_folder']+os.sep+name + '_split_'+ \
-                   str(counter)+'_of_'+str(len(Z))+'_mres.png'
+    outfile = config['label_folder']+os.sep+name+"_"+class_str+'_mres.png'
 
     plt.savefig(outfile,
-                dpi=600, bbox_inches = 'tight')
+                dpi=300, bbox_inches = 'tight')
     del fig; plt.close()
 
-    outfile = config['label_folder']+os.sep+name + '_split_'+ \
-                   str(counter)+'_of_'+str(len(Z))+'_label.png'
-
-    cv2.imwrite(outfile,
-                np.round(255*(resr/np.max(resr))).astype('uint8'))
 
 # =========================================================
-
-def DoCrf(o_img, out, config, name, counter):
-    im = o_img.copy()
-    print('Generating dense scene from sparse labels...')
-    res, _ = getCRF_justcol(im,
-                            out.astype('int'),
+def DoCrf(file, config, name): 
+    data = np.load(file)
+    res = getCRF(data['image'],
+                            data['label'].astype('int'),
                             config['classes'])
 
-    #res = median(res, disk(6))
-
-    Lcorig = out.copy().astype('float')
-    Lcorig[Lcorig<1] = np.nan
-
-    PlotAndSave(o_img, res, out.astype('int'), name, config, counter)
+    return median(res+1, disk(10))-1 #add 1 to avoid average of zero, then add back
 
 # =========================================================
-
-def getCRF_justcol(img, Lc, label_lines):
+def getCRF(img, Lc, label_lines):
     if np.ndim(img) == 2:
          img = np.dstack((img, img, img))
     H = img.shape[0]
     W = img.shape[1]
+	
     d = dcrf.DenseCRF2D(H, W, len(label_lines) + 1)
     U = unary_from_labels(Lc.astype('int'),
                           len(label_lines) + 1,
                           gt_prob=config['prob'])
     d.setUnaryEnergy(U)
-    feats = create_pairwise_bilateral(sdims=(config['theta'], config['theta']),
+
+    # to add the color-independent term, where features are the locations only:
+    d.addPairwiseGaussian(sxy=(config['theta_spat'], config['theta_spat']), compat=config['compat_spat'], kernel=dcrf.DIAG_KERNEL,
+                          normalization=dcrf.NORMALIZE_SYMMETRIC)
+	
+    feats = create_pairwise_bilateral(sdims=(config['theta_col'], config['theta_col']),
                                       schan=(config['scale'],
                                              config['scale'],
                                              config['scale']),
                                       img=img,
                                       chdim=2)
+									  
     d.addPairwiseEnergy(feats, compat=config['compat_col'],
                         kernel=dcrf.DIAG_KERNEL,
                         normalization=dcrf.NORMALIZE_SYMMETRIC)
     Q = d.inference(config['n_iter'])
-    preds = np.array(Q, dtype=np.float32).reshape(
-                     (len(label_lines) + 1, H, W)).transpose(1, 2, 0)
-    preds = np.expand_dims(preds, 0)
-    preds = np.squeeze(preds)
+    #preds = np.array(Q, dtype=np.float32).reshape(
+    #                 (len(label_lines) + 1, H, W)).transpose(1, 2, 0)
+    #preds = np.expand_dims(preds, 0)
+    #preds = np.squeeze(preds)
 
-    return np.argmax(Q, axis=0).reshape((H, W)), preds
+    return np.argmax(Q, axis=0).reshape((H, W)) #, preds
 
 # =========================================================
 class MaskPainter():
@@ -377,10 +422,9 @@ class MaskPainter():
 
             cv2.destroyWindow('whole image')
             ck += 1
-        return np.argmax(self.class_mask, axis=2)
+        return np.argmax(self.class_mask, axis=2), self.Z
 
 # =========================================================
-
 def TimeScreen():
     """
     Starts a timer and gets the screen size. I realize these should be seperate
@@ -412,7 +456,6 @@ def TimeScreen():
     return start, screen_size
 
 # =========================================================
-
 def OpenImage(image_path, im_order):
     """
     Opens the image of any type I know of
@@ -487,24 +530,23 @@ def StepCalc(im_shape, max_x_steps=None, max_y_steps=None):
     return num_x_steps, num_y_steps
 
 
-
 #===============================================================
 if __name__ == '__main__':
 
-    # argv = sys.argv[1:]
-    # try:
-    #     opts, args = getopt.getopt(argv,"h:c:")
-    # except getopt.GetoptError:
-    #     print('python doodler.py -c configfile.json')
-    #     sys.exit(2)
-    # for opt, arg in opts:
-    #     if opt == '-h':
-    #         print('Example usage: python doodler.py -c config.json')
-    #         sys.exit()
-    #     elif opt in ("-c"):
-    #         configfile = arg
+    argv = sys.argv[1:]
+    try:
+        opts, args = getopt.getopt(argv,"h:c:")
+    except getopt.GetoptError:
+        print('python doodler.py -c configfile.json')
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print('Example usage: python doodler.py -c config.json')
+            sys.exit()
+        elif opt in ("-c"):
+            configfile = arg
 
-    configfile = 'config.json'
+    #configfile = 'config.json'
     # load the user configs
     with open(os.getcwd()+os.sep+configfile) as f:
         config = json.load(f)
@@ -512,46 +554,69 @@ if __name__ == '__main__':
     # for k in config.keys():
     #     exec(k+'=config["'+k+'"]')
 
+    class_str = '_'.join(config['classes'].keys())
+
     files = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*.*')))
 
     N = []
+	
+    #N.append(files[0].split(os.sep)[-1].split('.')[0])
+    # print(N)
+	
     counter = 1
     for f in files:
 
         start, screen_size = TimeScreen()
         o_img = OpenImage(f, config['im_order'])
 
-        name = f.split(os.sep)[-1].split('.')[0]
+        name = f.split(os.sep)[-1].split('.')[0] #assume no dots in file name
         N.append(name)
 
         mp = MaskPainter(o_img.copy(), config, screen_size)
-        out = mp.LabelWindow()
+        out, Z = mp.LabelWindow()
+        out = out.astype('int')
+        nx, ny = np.shape(out)
+        gridy, gridx = np.meshgrid(np.arange(ny), np.arange(nx))
+		
+        counter = 0
+        for ind in Z:
+           np.savez(config['label_folder']+os.sep+name+"_tmp"+str(counter)+"_"+class_str+".npz", label=out[ind[0]:ind[1], ind[2]:ind[3]], image=o_img[ind[0]:ind[1], ind[2]:ind[3]], grid_x=gridx[ind[0]:ind[1], ind[2]:ind[3]], grid_y=gridy[ind[0]:ind[1], ind[2]:ind[3]])
+           counter += 1
 
-        outfile = config['label_folder']+os.sep+name + '_split_'+ \
-                       str(counter)+'_of_'+str(len(Z))+'.npy'
+        outfile = config['label_folder']+os.sep+name+"_"+class_str+'.npy'
         np.save(outfile, out)
         print("annotations saved to %s" % (outfile))
 
-        outfile = config['label_folder']+os.sep+name + '_split_'+ \
-                       str(counter)+'_of_'+str(len(Z))+'_im.npy'
-        np.save(outfile, o_img)
-        print("annotations saved to %s" % (outfile))
-
     counter += 1
+    print("Sparse labelling complete ...")
+	
 
     for name in N:
-        print("Sparse labelling complete ...")
         print("Dense labelling ... this may take a while")
-        label_files = sorted(glob(config['label_folder']+os.sep+name +'*.npy'))
-        im_files = sorted(glob(config['label_folder']+os.sep+name +'*_im.npy'))
+        label_files = sorted(glob(config['label_folder']+os.sep+name +'*tmp*'+class_str+'.npz'))
+        print("Found %i files" % (len(label_files)))
 
-        counter = 1
-        for l,f in zip(label_files, im_files):
-            out = np.load(l)
-            im = np.load(f)
-            DoCrf(im, out, config, name, counter)
-            counter += 1
+        o = Parallel(n_jobs = -1, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=None)(delayed(DoCrf)(label_files[k], config, name) for k in range(len(label_files)))
 
+        l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
+        l = np.load(l)
+        nx, ny = np.shape(l)
+        del l
+		
+        resr = np.zeros((nx, ny))
+
+        for k in range(len(o)):
+           l = np.load(label_files[k])	
+           resr[l['grid_x'], l['grid_y']] =o[k]
+        del o, l
+		
+        imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
+        img = OpenImage(imfile, config['im_order'])
+		
+        PlotAndSave(img.copy(), resr, name, config, class_str)
+
+        for f in label_files:
+           os.remove(f)
         #
         #
         #

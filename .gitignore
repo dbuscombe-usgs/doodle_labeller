@@ -1,3 +1,4 @@
 build/doodler/*
 dist/*
 doodler.spec
+data/label_images/*.npy

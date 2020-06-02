@@ -17,3 +17,4 @@ dependencies:
   - gdal
   - rasterio
   - scikit-image
+  - joblib
