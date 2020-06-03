@@ -38,7 +38,6 @@ You will need separate folders for:
 ### Make a config.json file
 Several example config files are provided. A generic multi-label case would be similar to
 
-	<code>
 	{
 	  "image_folder" : "data/images",
 	  "label_folder": "data/label_images",
@@ -66,7 +65,6 @@ Several example config files are provided. A generic multi-label case would be s
 	   "Anthro": "#23ad96"
 	 }
 	}
-	</code>
 
 where
 
@@ -138,7 +136,6 @@ python merge.py -c config_merge.json
 
 An example config file is provided:
 
-	<code>
 	{
 	{
 	  "image_folder" : "data/images",
@@ -188,7 +185,6 @@ An example config file is provided:
 	   "indeterminate": "#9e289c"
 	   }
 	}
-	</code>
 
 where most of the fields are the same as above, except
 
