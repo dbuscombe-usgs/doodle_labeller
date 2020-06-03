@@ -17,8 +17,6 @@ from glob import glob
 
 import pydensecrf.densecrf as dcrf
 from pydensecrf.utils import create_pairwise_bilateral, unary_from_labels
-from skimage.filters.rank import median
-from skimage.morphology import disk
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -26,7 +24,17 @@ from joblib import Parallel, delayed
 
 # =========================================================
 def PlotAndSave(img, resr, name, config, class_str):
-
+    """
+    Makes plots and save label images
+    Input:
+        img: 
+		resr:
+		name: 
+		config: 
+		class_str: 
+    Output:
+        None
+    """
     outfile = config['label_folder']+os.sep+name+"_"+class_str+'_label.png'
 
     cv2.imwrite(outfile,
@@ -62,6 +70,15 @@ def PlotAndSave(img, resr, name, config, class_str):
 
 # =========================================================
 def DoCrf(file, config, name):
+    """
+    Loads imagery and labels from npz file, and calls getCRF
+    Input:
+        file: 
+		name: 
+		config: 
+    Output:
+        res: 
+    """
     data = np.load(file)
 
     res = getCRF(data['image'],
@@ -71,15 +88,36 @@ def DoCrf(file, config, name):
     if np.all(res)==254:
        res *= 0
 	   
-    # try:
-       # res = median(res+1, disk(10))-1 #add 1 to avoid average of zero, then add back
-    # except:
-       # pass	
     return res
 
 # =========================================================
 def getCRF(img, Lc, label_lines):
-
+    """
+    Uses a dense CRF model to refine labels based on sparse labels and underlying image
+    Input:
+        img: 3D ndarray image
+		Lc: 2D ndarray label image (sparse or dense)
+		label_lines: list of class names
+	Global parameters used:
+		config['n_iter']: number of iterations of MAP inference.
+		config['theta_col']: standard deviations for the location component of the colour-dependent term.
+		config['theta_spat']: standard deviations for the location component of the colour-independent term.
+		config['compat_col']: label compatibilities for the colour-dependent term
+		config['compat_spat']: label compatibilities for the colour-independent term
+		config['scale']: spatial smoothness parameter
+		config['prob']: assumed probability of input labels	
+	Hard-coded variables:
+        kernel_bilateral: DIAG_KERNEL kernel precision matrix for the colour-dependent term
+            (can take values CONST_KERNEL, DIAG_KERNEL, or FULL_KERNEL).
+        normalisation_bilateral: NORMALIZE_SYMMETRIC normalisation for the colour-dependent term
+            (possible values are NO_NORMALIZATION, NORMALIZE_BEFORE, NORMALIZE_AFTER, NORMALIZE_SYMMETRIC).		
+        kernel_gaussian: DIAG_KERNEL kernel precision matrix for the colour-independent
+            term (can take values CONST_KERNEL, DIAG_KERNEL, or FULL_KERNEL).
+        normalisation_gaussian: NORMALIZE_SYMMETRIC normalisation for the colour-independent term
+            (possible values are NO_NORMALIZATION, NORMALIZE_BEFORE, NORMALIZE_AFTER, NORMALIZE_SYMMETRIC).
+    Output:
+        res : CRF-refined 2D label image
+    """
     if np.mean(img)<1:
        H = img.shape[0]
        W = img.shape[1]
@@ -93,8 +131,9 @@ def getCRF(img, Lc, label_lines):
        W = img.shape[1]
 
        R = []
-    
-       for mult in [.5,1,2]: #[.25, .5, 1, 2, 4]:
+   
+       ## loop through the 'theta' values (half, given, and double)	   
+       for mult in [.5,1,2]:
           d = dcrf.DenseCRF2D(H, W, len(label_lines) + 1)
           U = unary_from_labels(Lc.astype('int'),
                           len(label_lines) + 1,
@@ -365,9 +404,9 @@ class MaskPainter():
 def TimeScreen():
     """
     Starts a timer and gets the screen size. 
-    Takes:
+    Input:
         nothing
-    Returns:
+    Output:
         start : datetime stamp
         screen_size : tuple of screen size
     """
@@ -393,14 +432,13 @@ def TimeScreen():
 # =========================================================
 def OpenImage(image_path, im_order):
     """
-    Opens the image of any type I know of
     Returns the image in numpy array format
-    Takes:
+    Input:
         image_path : string
             Full or relative path to image
         config : dict
             Dictionary of parameters set in the parameters file
-    Returns:
+    Output:
         numpy array of image 2D or 3D #NOTE: want this to do multispectral
     """
     if image_path.lower()[-3:] == 'tif':
@@ -541,11 +579,6 @@ if __name__ == '__main__':
         print("Found %i files" % (len(label_files)))
 
         o = Parallel(n_jobs = -1, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=None)(delayed(DoCrf)(label_files[k], config, name) for k in range(len(label_files)))
-		
-		# o = []
-		# for k in range(len(label_files)):
-		   # print(label_files[k])
-		   # o.append(DoCrf(label_files[k], config, name))
 
         l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
         l = np.load(l)
@@ -570,23 +603,6 @@ if __name__ == '__main__':
 
         for f in label_files:
            os.remove(f)
-
-        # label = OpenImage(config['label_folder']+os.sep+name+"_"+class_str+'_label.png', None)
-		
-		# f = config['label_folder']+os.sep+name+"_tmp.npz"
-        # np.savez(f, label=label, image=img)
-
-        # #res = DoCrf(config['label_folder']+os.sep+name+"_tmp.npz", config, name) 
-        # data = np.load(f)
-        # label = data['label'].copy()
-        # label = label[:,:,0]
-        # label = (label/255.).astype('int')
-        # res = getCRF(data['image'],
-                            # label+1,
-                            # config['classes'])
-
-        # res = median(res+1, disk(10))-1 #add 1 to avoid average of zero, then add back
-
 
         #
         #

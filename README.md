@@ -12,7 +12,9 @@ There are many great tools for exhaustive image labeling for segmentation tasks,
 
 The approach taken here is to freehand label only some of the scene, then use a model to complete the scene. Sparse annotations are provided to a Conditional Random Field (CRF) model, that develops a scene-specific model for each class and creates a dense (i.e. per pixel) label image based on the information you provide it. This approach can reduce the time required for detailed labeling of large and complex scenes by an order of magnitude or more.
 
-This tool is also set up to tackle image labelling in stages. For example, by labeling individual classes then using the resulting binary label images as masks for the imagery to be labeled for subsequent classes.
+This tool is also set up to tackle image labelling in stages. For example, by labeling individual classes then using the resulting binary label images as masks for the imagery to be labeled for subsequent classes. Labeling is acheived using the `doodler.py` script
+
+Label images that are outputted by `doodler.py` can be merged using `merge.py`, which uses a CRF approach again to refine labels based on a windowing approach with 50% overlap. This refines labels further based on the underlying image.
 
 ## How to use
 
@@ -30,11 +32,11 @@ conda activate doodler
 
 ### Add pictures
 You will need separate folders for:
-* Where to get the images that you want to label `data/images`. The program will assume you want to label all these images in one go. It's usually best to put one image in there at a time at first while you get a feel for how long it takes
+* Where to get the images that you want to label `data/images`. The program will assume you want to label all these images in one go. It's usually best to put one image in there at a time 
 * Where to put a labeled images (annotation files in `.npy` format, the label images in png format, and a plot showing the image and label in png format)
 
 ### Make a config.json file
-Example is provided
+Several example config files are provided. A generic multi-label case would be similar to
 
 `
 {
@@ -45,11 +47,14 @@ Example is provided
   "ref_im_scale": 0.8,
   "lw": 5,
   "im_order": "RGB",
-  "theta": 40,
+  "theta_col": 40,
+  "theta_spat": 5,
   "n_iter": 10,
   "compat_col": 40,
+  "compat_spat": 5,
   "scale": 5,
   "prob": 0.4,
+  "apply_mask": "None",
   "classes": {
    "Surf_Swash": "#fcf9f9",
    "Water": "#3b81d0",
@@ -61,28 +66,36 @@ Example is provided
    "Anthro": "#23ad96"
  }
 }
+
 `
 where
 
-"image_folder" : ordinarily this would be "data/images" but could be a relative path to any relative directory
-"label_folder": see the above but for "data/label_images"
-"max_x_steps": number of tiles to split the image up in x direction
-"max_y_steps": number of tiles to split the image up in y direction
-"ref_im_scale": the proportion of the detected screen size to make the window
-"lw": initial pen width in pixels. this can be changed on the fly
-"im_order": either "RGB" or "BGR", depending on what type of imagery you have (RGB is more common)
-"theta_col": 40,
-"compat_col": 40,
-"scale": 5,
-"prob": 0.4,
-"n_iter": 10,
-"classes": a dictionary of class names and associated colors as hex codes. there are various online color pickers including this one: https://htmlcolorcodes.com/
+* "image_folder" : ordinarily this would be "data/images" but could be a relative path to any relative directory
+* "label_folder": see the above but for "data/label_images"
+* "max_x_steps": number of tiles to split the image up in x direction
+* "max_y_steps": number of tiles to split the image up in y direction
+* "ref_im_scale": the proportion of the detected screen size to make the window
+* "lw": initial pen width in pixels. this can be changed on the fly
+* "im_order": either "RGB" or "BGR", depending on what type of imagery you have (RGB is more common)
+* "theta_col": standard deviations for the location component of the colour-dependent term.
+* "theta_spat": standard deviations for the location component of the colour-independent term.
+* "compat_col": label compatibilities for the colour-dependent term
+* "compat_spat": label compatibilities for the colour-independent term
+* "scale": spatial smoothness parameter (pixels)
+* "prob": assumed probability of input labels	
+* "n_iter": number of iterations of CRF inference.
+* "classes": a dictionary of class names and associated colors as hex codes. There are various online color pickers including [this one](https://htmlcolorcodes.com/)
+* "apply_mask": either `None` (if no pre-masking) or a list of binary label images with which to mask the image 
 
-This file must be called `config.json`
+This file can be saved anywhere and called anything, but it must have the `.json` format extension.
 
-### Run
-If you are running this through command line, you will need to cd to the
-directory you will be working in, for example:
+Note that if you get errors reading your config file, it is probably because you have put commas where you shouldn't, or have left commas out
+
+
+## Run doodler.py
+Assuming you have already activated the conda environment (`conda activate doodler` - see above) ...
+
+you will need to cd to the directory you will be working in, for example:
 
 ```
 cd /Documents/doodle_labeller
@@ -94,22 +107,96 @@ Then run it with:
 python doodler.py -c config_file.json
 ```
 
-It will select the next image the next time you run it.
-
 ### Draw on the image
 The title of the window is the label that will be associated with the pixels
-you draw on. After you are done with label press escape. You can increase and
-decrease the brush width with + / -. You can also undo a mistake with z.
+you draw on, by holding down the left mouse button. After you are done with label press `escape` (Esc key, usually the top left corner on your keyboard). You can increase and decrease the brush width with `+ / -` keys. You can also undo a mistake with the `z` key.
 
 * Use s to skip a square
 * Use b to go back a square
 * Use number keys to switch label
 
-## Dense labeling happens after a manual annotation session
+If your mouse has a scroll wheel, you can use that to zoom in and out. Other navigation options (zoom, pan, etc) are available with a right mouse click. 
+
+### Dense labeling happens after a manual annotation session
 After you have labeled each image tile for each image, the program will automatically use the CRF algorithm to
 carry out dense (i.e. per-pixel) labelling based on the labels you provided and the underlying image
 
+## Run merge.py
+Assuming you have already activated the conda environment (`conda activate doodler` - see above) ...
 
+you will need to cd to the directory you will be working in, for example:
+
+```
+cd /Documents/doodle_labeller
+```
+
+Then run it with:
+
+```
+python merge.py -c config_merge.json
+```
+
+An example config file is provided:
+
+`
+{
+{
+  "image_folder" : "data/images",
+  "im_order": "RGB",
+  "theta_col": 40,
+  "theta_spat": 5,
+  "n_iter": 10,
+  "compat_col": 40,
+  "compat_spat": 5,
+  "scale": 5,
+  "prob": 0.4,  
+  "outfile": "data/label_images/2019-0830-195300-DSC04880-N7251F_merged_label.png",
+  
+  "to_merge": {
+  "water":  "data/label_images/2019-0830-195300-DSC04880-N7251F_water_no_water_label.png",
+  "veg": "data/label_images/2019-0830-195300-DSC04880-N7251F_vegetation_no_vegetation_label.png",
+  "anthro": "data/label_images/2019-0830-195300-DSC04880-N7251F_anthro_no_anthro_label.png",
+  "substrate": "data/label_images/2019-0830-195300-DSC04880-N7251F_sand_mud_gravel_boulders_snow_ice_wrack_peat_indeterminate_label.png"
+   },
+   
+  "classes1": 
+  {
+   "water": "#3b81d0",
+   "no_water": "#e35259"
+  },
+  
+  "classes2":
+  {
+   "vegetation": "#29f120",
+   "no_vegetation": "#e35259"
+  },  
+  
+  "classes3":
+  {
+   "anthro": "#f12063",
+   "no_anthro": "#e35259"
+  },  
+  
+  "classes4":
+  {
+   "sand": "#c0d03b",
+   "mud": "#62894d",
+   "gravel": "#395c27",
+   "boulders": "#94925c",
+   "snow_ice": "#888c8c",
+   "wrack_peat": "#23ad96",
+   "indeterminate": "#9e289c"
+   }
+}
+`
+
+where most of the fields are the same as above, except
+
+* "to_merge": a list of label images (generated by doodler.py) to merge
+* "classes1", "classes2", etc: these are the class names and hex color codes associated with each label image in "to_merge", in order
+
+
+<!-- 
 ## compiling doodler.py
 - conda activate doodler
 - pip install --upgrade 'setuptools<45.0.0'
@@ -117,9 +204,8 @@ carry out dense (i.e. per-pixel) labelling based on the labels you provided and 
 - pip install pyinstaller
 - pyinstaller --onefile --noconfirm doodler.py --clean --hidden-import pydensecrf.eigen
 - conda deactivate
-- ./dist/doodler
+- ./dist/doodler -->
 
 ## Improvements coming soon
 * support for geotiffs
 * compiled executables
-* (maybe) add water masking model to automatically mask water prior to manual annotation
