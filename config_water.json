@@ -13,6 +13,7 @@
   "compat_spat": 5,
   "scale": 5,
   "prob": 0.4,
+  "apply_mask": "None",
   "classes": {
    "water": "#3b81d0",
    "no_water": "#e35259"

@@ -12,6 +12,8 @@ There are many great tools for exhaustive image labeling for segmentation tasks,
 
 The approach taken here is to freehand label only some of the scene, then use a model to complete the scene. Sparse annotations are provided to a Conditional Random Field (CRF) model, that develops a scene-specific model for each class and creates a dense (i.e. per pixel) label image based on the information you provide it. This approach can reduce the time required for detailed labeling of large and complex scenes by an order of magnitude or more.
 
+This tool is also set up to tackle image labelling in stages. For example, by labeling individual classes then using the resulting binary label images as masks for the imagery to be labeled for subsequent classes.
+
 ## How to use
 
 This is python software that is designed to be used from within a `conda` environment. After setting up that environment, the user places imagery in a folder and creates a `config` file that tells the program where the imagery is and what classes will be labeled. The minimum number of classes is 2. There is no limit to the maximum number of classes.

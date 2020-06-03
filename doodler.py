@@ -63,46 +63,65 @@ def PlotAndSave(img, resr, name, config, class_str):
 # =========================================================
 def DoCrf(file, config, name):
     data = np.load(file)
-    res = getCRF(data['image'],
-                            data['label'].astype('int'),
-                            config['classes'])
 
-    return median(res+1, disk(10))-1 #add 1 to avoid average of zero, then add back
+    res = getCRF(data['image'],
+                            data['label'],
+                            config['classes'])
+ 	
+    if np.all(res)==254:
+       res *= 0
+	   
+    # try:
+       # res = median(res+1, disk(10))-1 #add 1 to avoid average of zero, then add back
+    # except:
+       # pass	
+    return res
 
 # =========================================================
 def getCRF(img, Lc, label_lines):
-    if np.ndim(img) == 2:
-         img = np.dstack((img, img, img))
-    H = img.shape[0]
-    W = img.shape[1]
 
-    d = dcrf.DenseCRF2D(H, W, len(label_lines) + 1)
-    U = unary_from_labels(Lc.astype('int'),
+    if np.mean(img)<1:
+       H = img.shape[0]
+       W = img.shape[1]
+       res = np.zeros((H,W)) * np.mean(Lc)	   
+	
+    else:
+
+       if np.ndim(img) == 2:
+          img = np.dstack((img, img, img))
+       H = img.shape[0]
+       W = img.shape[1]
+
+       R = []
+    
+       for mult in [.5,1,2]: #[.25, .5, 1, 2, 4]:
+          d = dcrf.DenseCRF2D(H, W, len(label_lines) + 1)
+          U = unary_from_labels(Lc.astype('int'),
                           len(label_lines) + 1,
                           gt_prob=config['prob'])
-    d.setUnaryEnergy(U)
+          d.setUnaryEnergy(U)
 
-    # to add the color-independent term, where features are the locations only:
-    d.addPairwiseGaussian(sxy=(config['theta_spat'], config['theta_spat']), compat=config['compat_spat'], kernel=dcrf.DIAG_KERNEL,
-                          normalization=dcrf.NORMALIZE_SYMMETRIC)
+          # to add the color-independent term, where features are the locations only:
+          d.addPairwiseGaussian(sxy=(int(mult*config['theta_spat']), int(mult*config['theta_spat'])), compat=config['compat_spat'], kernel=dcrf.DIAG_KERNEL, normalization=dcrf.NORMALIZE_SYMMETRIC)
 
-    feats = create_pairwise_bilateral(sdims=(config['theta_col'], config['theta_col']),
+          feats = create_pairwise_bilateral(sdims=(int(mult*config['theta_col']), int(mult*config['theta_col'])),
                                       schan=(config['scale'],
                                              config['scale'],
                                              config['scale']),
                                       img=img,
                                       chdim=2)
 
-    d.addPairwiseEnergy(feats, compat=config['compat_col'],
+          d.addPairwiseEnergy(feats, compat=config['compat_col'],
                         kernel=dcrf.DIAG_KERNEL,
                         normalization=dcrf.NORMALIZE_SYMMETRIC)
-    Q = d.inference(config['n_iter'])
-    #preds = np.array(Q, dtype=np.float32).reshape(
-    #                 (len(label_lines) + 1, H, W)).transpose(1, 2, 0)
-    #preds = np.expand_dims(preds, 0)
-    #preds = np.squeeze(preds)
+          Q = d.inference(config['n_iter'])
+	
+          R.append(np.argmax(Q, axis=0).reshape((H, W)))
 
-    return np.argmax(Q, axis=0).reshape((H, W)) #, preds
+       res = np.round(np.median(R, axis=0))
+       del R
+
+    return res #, preds
 
 # =========================================================
 class MaskPainter():
@@ -186,18 +205,17 @@ class MaskPainter():
         return x, y
 
     def Overlay(self, src, overlay):
-        #                 (src , overlay):
         """
         Returns a new image to display, after blending in the pixels that have
             been labeled
 
-        Takes
+        Inputs:
         src : array
             Original image
         overlay : array
             Overlay image, in this case the Labels
 
-        Returns
+        Outputs:
         -------
         new_im : array
             Blended im
@@ -338,16 +356,6 @@ class MaskPainter():
                     self.class_mask[self.Z[ck][0]:self.Z[ck][1],
                                     self.Z[ck][2]:self.Z[ck][3], :] = Lc
                     lab = False
-            # else:
-            #     if self.config['auto_class'] == "No":
-            #         ac = 0
-            #     else:
-            #         ac = list(self.config['classes'].keys()).index('BackGrnd') + 1
-            #     self.class_mask[self.Z[ck][0]:self.Z[ck][1],
-            #                     self.Z[ck][2]:self.Z[ck][3], :] = \
-            #         np.ones((self.im_sect.shape[0],
-            #                 self.im_sect.shape[1],
-            #                 self.class_mask.shape[2])) * ac
 
             cv2.destroyWindow('whole image')
             ck += 1
@@ -356,9 +364,7 @@ class MaskPainter():
 # =========================================================
 def TimeScreen():
     """
-    Starts a timer and gets the screen size. I realize these should be seperate
-      functions, but the os name is here, so might as well. Maybe this should
-      seperated in the future.
+    Starts a timer and gets the screen size. 
     Takes:
         nothing
     Returns:
@@ -398,7 +404,7 @@ def OpenImage(image_path, im_order):
         numpy array of image 2D or 3D #NOTE: want this to do multispectral
     """
     if image_path.lower()[-3:] == 'tif':
-        img = WF.ReadGeotiff(image_path, im_order)
+        img = WF.ReadGeotiff(image_path, im_order) #need to implemten WF
     else:
         img = cv2.imread(image_path)
         if im_order=='RGB':
@@ -499,7 +505,6 @@ if __name__ == '__main__':
             masks.append((OpenImage(config["apply_mask"][k], None)[:,:,0]==0).astype('int'))
 
 
-    counter = 1
     for f in files:
 
         start, screen_size = TimeScreen()
@@ -507,7 +512,7 @@ if __name__ == '__main__':
 
         if masks:
             for k in masks:
-                o_img[k==1] = 0
+                o_img[k==1] = 255
 
         name = f.split(os.sep)[-1].split('.')[0] #assume no dots in file name
         N.append(name)
@@ -523,11 +528,10 @@ if __name__ == '__main__':
            np.savez(config['label_folder']+os.sep+name+"_tmp"+str(counter)+"_"+class_str+".npz", label=out[ind[0]:ind[1], ind[2]:ind[3]], image=o_img[ind[0]:ind[1], ind[2]:ind[3]], grid_x=gridx[ind[0]:ind[1], ind[2]:ind[3]], grid_y=gridy[ind[0]:ind[1], ind[2]:ind[3]])
            counter += 1
 
-        outfile = config['label_folder']+os.sep+name+"_"+class_str+'.npy'
+        outfile = config['label_folder']+os.sep+name+"_"+class_str+".npy"
         np.save(outfile, out)
         print("annotations saved to %s" % (outfile))
 
-    counter += 1
     print("Sparse labelling complete ...")
 
 
@@ -537,6 +541,11 @@ if __name__ == '__main__':
         print("Found %i files" % (len(label_files)))
 
         o = Parallel(n_jobs = -1, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=None)(delayed(DoCrf)(label_files[k], config, name) for k in range(len(label_files)))
+		
+		# o = []
+		# for k in range(len(label_files)):
+		   # print(label_files[k])
+		   # o.append(DoCrf(label_files[k], config, name))
 
         l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
         l = np.load(l)
@@ -550,6 +559,10 @@ if __name__ == '__main__':
            resr[l['grid_x'], l['grid_y']] =o[k]
         del o, l
 
+        if masks:
+            for k in masks:
+                resr[k==1] = 1
+
         imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
         img = OpenImage(imfile, config['im_order'])
 
@@ -557,6 +570,24 @@ if __name__ == '__main__':
 
         for f in label_files:
            os.remove(f)
+
+        # label = OpenImage(config['label_folder']+os.sep+name+"_"+class_str+'_label.png', None)
+		
+		# f = config['label_folder']+os.sep+name+"_tmp.npz"
+        # np.savez(f, label=label, image=img)
+
+        # #res = DoCrf(config['label_folder']+os.sep+name+"_tmp.npz", config, name) 
+        # data = np.load(f)
+        # label = data['label'].copy()
+        # label = label[:,:,0]
+        # label = (label/255.).astype('int')
+        # res = getCRF(data['image'],
+                            # label+1,
+                            # config['classes'])
+
+        # res = median(res+1, disk(10))-1 #add 1 to avoid average of zero, then add back
+
+
         #
         #
         #

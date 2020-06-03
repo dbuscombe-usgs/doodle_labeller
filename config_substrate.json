@@ -15,7 +15,8 @@
   "prob": 0.4,
   "apply_mask": {
   "water":  "data/label_images/2019-0830-195300-DSC04880-N7251F_water_no_water_label.png",
-  "veg": "data/label_images/2019-0830-195300-DSC04880-N7251F_vegetation_no_vegetation_label.png"
+  "veg": "data/label_images/2019-0830-195300-DSC04880-N7251F_vegetation_no_vegetation_label.png",
+  "anthro": "data/label_images/2019-0830-195300-DSC04880-N7251F_anthro_no_anthro_label.png"
    },
   "classes": {
    "sand": "#c0d03b",
@@ -24,7 +25,6 @@
    "boulders": "#94925c",
    "snow_ice": "#888c8c",
    "wrack_peat": "#23ad96",
-   "anthro": "#181616",
    "indeterminate": "#9e289c"
    }
 }
