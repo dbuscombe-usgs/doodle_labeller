@@ -38,35 +38,35 @@ You will need separate folders for:
 ### Make a config.json file
 Several example config files are provided. A generic multi-label case would be similar to
 
-<code>
-{
-  "image_folder" : "data/images",
-  "label_folder": "data/label_images",
-  "max_x_steps": 4,
-  "max_y_steps": 4,
-  "ref_im_scale": 0.8,
-  "lw": 5,
-  "im_order": "RGB",
-  "theta_col": 40,
-  "theta_spat": 5,
-  "n_iter": 10,
-  "compat_col": 40,
-  "compat_spat": 5,
-  "scale": 5,
-  "prob": 0.4,
-  "apply_mask": "None",
-  "classes": {
-   "Surf_Swash": "#fcf9f9",
-   "Water": "#3b81d0",
-   "BareSand": "#c0d03b",
-   "Grass_Shrub": "#62894d",
-   "WoodyVeg": "#395c27",
-   "MarshPlatform": "#94925c",
-   "Road": "#888c8c",
-   "Anthro": "#23ad96"
- }
-}
-</code>
+	<code>
+	{
+	  "image_folder" : "data/images",
+	  "label_folder": "data/label_images",
+	  "max_x_steps": 4,
+	  "max_y_steps": 4,
+	  "ref_im_scale": 0.8,
+	  "lw": 5,
+	  "im_order": "RGB",
+	  "theta_col": 40,
+	  "theta_spat": 5,
+	  "n_iter": 10,
+	  "compat_col": 40,
+	  "compat_spat": 5,
+	  "scale": 5,
+	  "prob": 0.4,
+	  "apply_mask": "None",
+	  "classes": {
+	   "Surf_Swash": "#fcf9f9",
+	   "Water": "#3b81d0",
+	   "BareSand": "#c0d03b",
+	   "Grass_Shrub": "#62894d",
+	   "WoodyVeg": "#395c27",
+	   "MarshPlatform": "#94925c",
+	   "Road": "#888c8c",
+	   "Anthro": "#23ad96"
+	 }
+	}
+	</code>
 
 where
 
@@ -138,57 +138,57 @@ python merge.py -c config_merge.json
 
 An example config file is provided:
 
-<code>
-{
-{
-  "image_folder" : "data/images",
-  "im_order": "RGB",
-  "theta_col": 40,
-  "theta_spat": 5,
-  "n_iter": 10,
-  "compat_col": 40,
-  "compat_spat": 5,
-  "scale": 5,
-  "prob": 0.4,  
-  "outfile": "data/label_images/2019-0830-195300-DSC04880-N7251F_merged_label.png",
-  
-  "to_merge": {
-  "water":  "data/label_images/2019-0830-195300-DSC04880-N7251F_water_no_water_label.png",
-  "veg": "data/label_images/2019-0830-195300-DSC04880-N7251F_vegetation_no_vegetation_label.png",
-  "anthro": "data/label_images/2019-0830-195300-DSC04880-N7251F_anthro_no_anthro_label.png",
-  "substrate": "data/label_images/2019-0830-195300-DSC04880-N7251F_sand_mud_gravel_boulders_snow_ice_wrack_peat_indeterminate_label.png"
-   },
-   
-  "classes1": 
-  {
-   "water": "#3b81d0",
-   "no_water": "#e35259"
-  },
-  
-  "classes2":
-  {
-   "vegetation": "#29f120",
-   "no_vegetation": "#e35259"
-  },  
-  
-  "classes3":
-  {
-   "anthro": "#f12063",
-   "no_anthro": "#e35259"
-  },  
-  
-  "classes4":
-  {
-   "sand": "#c0d03b",
-   "mud": "#62894d",
-   "gravel": "#395c27",
-   "boulders": "#94925c",
-   "snow_ice": "#888c8c",
-   "wrack_peat": "#23ad96",
-   "indeterminate": "#9e289c"
-   }
-}
-</code>
+	<code>
+	{
+	{
+	  "image_folder" : "data/images",
+	  "im_order": "RGB",
+	  "theta_col": 40,
+	  "theta_spat": 5,
+	  "n_iter": 10,
+	  "compat_col": 40,
+	  "compat_spat": 5,
+	  "scale": 5,
+	  "prob": 0.4,  
+	  "outfile": "data/label_images/2019-0830-195300-DSC04880-N7251F_merged_label.png",
+	  
+	  "to_merge": {
+	  "water":  "data/label_images/2019-0830-195300-DSC04880-N7251F_water_no_water_label.png",
+	  "veg": "data/label_images/2019-0830-195300-DSC04880-N7251F_vegetation_no_vegetation_label.png",
+	  "anthro": "data/label_images/2019-0830-195300-DSC04880-N7251F_anthro_no_anthro_label.png",
+	  "substrate": "data/label_images/2019-0830-195300-DSC04880-N7251F_sand_mud_gravel_boulders_snow_ice_wrack_peat_indeterminate_label.png"
+	   },
+	   
+	  "classes1": 
+	  {
+	   "water": "#3b81d0",
+	   "no_water": "#e35259"
+	  },
+	  
+	  "classes2":
+	  {
+	   "vegetation": "#29f120",
+	   "no_vegetation": "#e35259"
+	  },  
+	  
+	  "classes3":
+	  {
+	   "anthro": "#f12063",
+	   "no_anthro": "#e35259"
+	  },  
+	  
+	  "classes4":
+	  {
+	   "sand": "#c0d03b",
+	   "mud": "#62894d",
+	   "gravel": "#395c27",
+	   "boulders": "#94925c",
+	   "snow_ice": "#888c8c",
+	   "wrack_peat": "#23ad96",
+	   "indeterminate": "#9e289c"
+	   }
+	}
+	</code>
 
 where most of the fields are the same as above, except
 
