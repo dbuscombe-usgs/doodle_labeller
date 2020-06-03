@@ -9,6 +9,7 @@
   "scale": 5,
   "prob": 0.4,  
   "outfile": "data/label_images/2019-0830-195300-DSC04880-N7251F_merged_label.png",
+  "out_csv": "data/label_images/2019-0830-195300-DSC04880-N7251F_merged_label.csv",
   
   "to_merge": {
   "water":  "data/label_images/2019-0830-195300-DSC04880-N7251F_water_no_water_label.png",

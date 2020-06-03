@@ -15,7 +15,7 @@ What is generally required is a semi-supervised tool for efficient image labelin
 
 The approach taken here is to freehand label only some of the scene, then use a model to complete the scene. Sparse annotations are provided to a Conditional Random Field (CRF) model, that develops a scene-specific model for each class and creates a dense (i.e. per pixel) label image based on the information you provide it. This approach can reduce the time required for detailed labeling of large and complex scenes by an order of magnitude or more.
 
-This tool is also set up to tackle image labelling in stages. For example, by labeling individual classes then using the resulting binary label images as masks for the imagery to be labeled for subsequent classes. Labeling is acheived using the `doodler.py` script
+This tool is also set up to tackle image labelling in stages, using minimal annotations. For example, by labeling individual classes then using the resulting binary label images as masks for the imagery to be labeled for subsequent classes. Labeling is acheived using the `doodler.py` script
 
 Label images that are outputted by `doodler.py` can be merged using `merge.py`, which uses a CRF approach again to refine labels based on a windowing approach with 50% overlap. This refines labels further based on the underlying image.
 
@@ -73,13 +73,13 @@ where
 
 * "image_folder" : ordinarily this would be "data/images" but could be a relative path to any relative directory
 * "label_folder": see the above but for "data/label_images"
-* "max_x_steps": number of tiles to split the image up in x direction
-* "max_y_steps": number of tiles to split the image up in y direction
-* "ref_im_scale": the proportion of the detected screen size to make the window
-* "lw": initial pen width in pixels. this can be changed on the fly
+* "max_x_steps": number of tiles to split the image up in x direction (suggested range: 1- 6, depending on image size/complexity)
+* "max_y_steps": number of tiles to split the image up in y direction (suggested range: 1- 6, depending on image size/complexity)
+* "ref_im_scale": the proportion of the detected screen size to make the window (suggested: 0.5 -- 1.0)
+* "lw": initial pen width in pixels. this can be changed on the fly (suggested range: 5 - 10, depending on image size)
 * "im_order": either "RGB" or "BGR", depending on what type of imagery you have (RGB is more common)
-* "theta_col": standard deviations for the location component of the colour-dependent term.
-* "theta_spat": standard deviations for the location component of the colour-independent term.
+* "theta_col": standard deviations for the location component of the colour-dependent term. (suggested range: 20 -- 60)
+* "theta_spat": standard deviations for the location component of the colour-independent term. (suggested range: 1--10)
 * "compat_col": label compatibilities for the colour-dependent term
 * "compat_spat": label compatibilities for the colour-independent term
 * "scale": spatial smoothness parameter (pixels)
@@ -91,6 +91,8 @@ where
 This file can be saved anywhere and called anything, but it must have the `.json` format extension.
 
 Note that if you get errors reading your config file, it is probably because you have put commas where you shouldn't, or have left commas out
+
+Also note that the program uses an average of label image estimated using the specified `theta_col` and `theta_spat`, 2 x `theta_col` and 2 x `theta_spat`, and 0.5 x `theta_col` and 0.5 x `theta_spat`. This increases performance, and lessens the pressure on the user to specify those parameters exactly. The suggested values work for most cases.
 
 
 ## Run doodler.py
@@ -123,6 +125,11 @@ After you have labeled each image tile for each image, the program will automati
 carry out dense (i.e. per-pixel) labelling based on the labels you provided and the underlying image
 
 ## Run merge.py
+
+This script takes each individual mask image and merges them into one, keeping track of classes and class colors. This script takes a while to run, because it splits the merged image into small pieces that overlap by 50%, carries out a task-specific CRF-based label refinement on each, then averages the results. The idea is to refine the image by over-sampling. Finally, a median filter is applied with an 11-pixel radius circular structural element, to smooth high-frequency noise.
+
+The amount of time the program takes is a function of the size of the image, and the number of CPU cores. The program uses all available cores, so machines with many cores will be faster. The program takes about 7 mins for a > 7000 x 4000 image using 8 Intel i7 2.9 GHz cores. Use of 16 cores of equivalent specification would approximately half the execution time, as would an image of half as many pixels.   
+
 Assuming you have already activated the conda environment (`conda activate doodler` - see above) ...
 
 you will need to cd to the directory you will be working in, for example:

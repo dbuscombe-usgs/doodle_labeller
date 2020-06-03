@@ -3,7 +3,7 @@
 # > Daniel Buscombe, Marda Science daniel@mardascience.com
 # > USGS Pacific Marine Science Center
 #
-import os, json
+import os, json, csv
 import sys, getopt
 import cv2
 import numpy as np
@@ -61,7 +61,7 @@ def getCRF(img, Lc, label_lines):
        R = []
     
        ## loop through the 'theta' values (half, given, and double)	
-       for mult in [.5,1,2]: 
+       for mult in [1]: #[.5,1,2]: 
           d = dcrf.DenseCRF2D(H, W, len(label_lines) + 1)
           U = unary_from_labels(Lc.astype('int'),
                           len(label_lines) + 1,
@@ -285,7 +285,12 @@ if __name__ == '__main__':
        for c,r in zip(classes_names, rgb):
           class_dict[c] = r
 
-    ## write out rgb image
+    ##write class dict to csv file
+    with open(config['out_csv'], 'w') as f:
+       for key in class_dict.keys():
+          f.write("%s,%s\n" % (key, str(class_dict[key]).replace(')','').replace('(','')) )
+
+    ## write out initial rgb image (this will be revised by CRF later)
     print("Writing our RGB image to %s" % (config['outfile']))
     cv2.imwrite(config['outfile'], cv2.cvtColor(msk, cv2.COLOR_RGB2BGR) )
 
@@ -336,7 +341,7 @@ if __name__ == '__main__':
     Zx,_ = sliding_window(gridx, (sx, sy), (ssx, ssy))
     Zy,_ = sliding_window(gridy, (sx, sy), (ssx, ssy))
 	
-    ## get two grids, one for averaging and one for accumulation
+    ## get two grids, one for division and one for accumulation
     av = np.zeros((nx, ny))	
     out = np.zeros((nx, ny))	
     for k in range(len(o)):
@@ -352,8 +357,9 @@ if __name__ == '__main__':
     ## to do this without windowing/overlap, we would do	
     #res = getCRF(img, msk_flat, class_dict)+1
 
-    ## median filter to remove remaining high-freq spatial noise
+    ## median filter to remove remaining high-freq spatial noise (radius of 11 pixels)
     res = median(res.astype(np.uint8), disk(11))
+    ## replace zeros with most populous value	
     res[res==0] = np.argmax(np.bincount(res.flatten()))	
 	
     ## write out the refined flattened label image
@@ -361,13 +367,13 @@ if __name__ == '__main__':
     cv2.imwrite(config['outfile'].replace('.png', '_flat.png'), 
 	            np.round(255*(res/np.max(res))).astype('uint8'))    
 		
-    del res
     ## allocate empty 3D array of same x-y dimensions
     msk = np.zeros((res.shape)+(3,), dtype=np.uint8)
     	
     for k in np.unique(res):
        ind = (res==k)
        msk[ind] = cols[k-1]
+    del res
        
     ## write out smoothed rgb image
     print("Writing our RGB image to %s" % (config['outfile'].replace('.png', '_crf.png')))
