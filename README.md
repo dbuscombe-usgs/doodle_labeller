@@ -2,18 +2,21 @@
 
 > Daniel Buscombe, Marda Science daniel@mardascience.com
 
+> Developed for the USGS Coastal Marine Geology program, as part of the Florence Supplemental project
+
+> This is a tool for partially supervised image segmentation and is based on code previously contained in the "dl tools" [repository](https://github.com/dbuscombe-usgs/dl_tools)
+
 > Significant code contribution from LCDR Brodie Wells, Naval Postgraduate school Monterey
 
 > Sample image provided by Christine Kranenburg , USGS St. Petersburg Coastal and Marine Science Center
 
-This is a tool for partially supervised image segmentation and is based on code previously contained in the "dl tools" repository, https://github.com/dbuscombe-usgs/dl_tools
 
 ## Rationale
 There are many great tools for exhaustive image labeling for segmentation tasks, using polygons. Examples include [makesense.ai](www.makesense.ai) and [cvat](https://cvat.org). However, for high-resolution imagery with large spatial footprints and complex scenes, such as aerial and satellite imagery, exhaustive labeling using polygonal tools is prohibitively time-consuming.
 
-What is generally required is a semi-supervised tool for efficient image labeling, based on sparse examples provided by a human annotator.
+What is generally required is a semi-supervised tool for efficient image labeling, based on sparse examples provided by a human annotator. 
 
-The approach taken here is to freehand label only some of the scene, then use a model to complete the scene. Sparse annotations are provided to a Conditional Random Field (CRF) model, that develops a scene-specific model for each class and creates a dense (i.e. per pixel) label image based on the information you provide it. This approach can reduce the time required for detailed labeling of large and complex scenes by an order of magnitude or more.
+`Doodler` is a tool for exemplative, not exhaustive, labelling. The approach taken here is to freehand label only some of the scene, then use a model to complete the scene. Sparse annotations are provided to a Conditional Random Field (CRF) model, that develops a scene-specific model for each class and creates a dense (i.e. per pixel) label image based on the information you provide it. This approach can reduce the time required for detailed labeling of large and complex scenes by an order of magnitude or more.
 
 This tool is also set up to tackle image labelling in stages, using minimal annotations. For example, by labeling individual classes then using the resulting binary label images as masks for the imagery to be labeled for subsequent classes. Labeling is acheived using the `doodler.py` script
 
