@@ -8,13 +8,13 @@
 
 > Significant code contribution from LCDR Brodie Wells, Naval Postgraduate school Monterey
 
-> Sample image provided by Christine Kranenburg , USGS St. Petersburg Coastal and Marine Science Center
+> Sample images provided by 1) Christine Kranenburg, USGS St. Petersburg Coastal and Marine Science Center, 2) Chris Sherwood, USGS Woods Hole Coastal and Marine Science Center, and 3) Jenna Brown, USGS MD-DE-DC Water Science Center
 
 
 ## Rationale
 There are many great tools for exhaustive image labeling for segmentation tasks, using polygons. Examples include [makesense.ai](www.makesense.ai) and [cvat](https://cvat.org). However, for high-resolution imagery with large spatial footprints and complex scenes, such as aerial and satellite imagery, exhaustive labeling using polygonal tools is prohibitively time-consuming.
 
-What is generally required is a semi-supervised tool for efficient image labeling, based on sparse examples provided by a human annotator. 
+What is generally required is a semi-supervised tool for efficient image labeling, based on sparse examples provided by a human annotator.
 
 `Doodler` is a tool for exemplative, not exhaustive, labelling. The approach taken here is to freehand label only some of the scene, then use a model to complete the scene. Sparse annotations are provided to a Conditional Random Field (CRF) model, that develops a scene-specific model for each class and creates a dense (i.e. per pixel) label image based on the information you provide it. This approach can reduce the time required for detailed labeling of large and complex scenes by an order of magnitude or more.
 
@@ -47,7 +47,7 @@ conda activate doodler
 
 ### Add pictures
 You will need separate folders for:
-* Where to get the images that you want to label `data/images`. The program will assume you want to label all these images in one go. It's usually best to put one image in there at a time 
+* Where to get the images that you want to label `data/images`. The program will assume you want to label all these images in one go. It's usually best to put one image in there at a time
 * Where to put a labeled images (annotation files in `.npy` format, the label images in png format, and a plot showing the image and label in png format)
 
 ### Make a config.json file
@@ -95,10 +95,10 @@ where
 * "compat_col": label compatibilities for the colour-dependent term
 * "compat_spat": label compatibilities for the colour-independent term
 * "scale": spatial smoothness parameter (pixels)
-* "prob": assumed probability of input labels	
+* "prob": assumed probability of input labels
 * "n_iter": number of iterations of CRF inference.
 * "classes": a dictionary of class names and associated colors as hex codes. There are various online color pickers including [this one](https://htmlcolorcodes.com/)
-* "apply_mask": either `None` (if no pre-masking) or a list of binary label images with which to mask the image 
+* "apply_mask": either `None` (if no pre-masking) or a list of binary label images with which to mask the image
 
 This file can be saved anywhere and called anything, but it must have the `.json` format extension.
 
@@ -130,7 +130,7 @@ you draw on, by holding down the left mouse button. After you are done with labe
 * Use b to go back a square
 * Use number keys to switch label
 
-If your mouse has a scroll wheel, you can use that to zoom in and out. Other navigation options (zoom, pan, etc) are available with a right mouse click. 
+If your mouse has a scroll wheel, you can use that to zoom in and out. Other navigation options (zoom, pan, etc) are available with a right mouse click.
 
 ### Dense labeling happens after a manual annotation session
 After you have labeled each image tile for each image, the program will automatically use the CRF algorithm to
@@ -170,32 +170,32 @@ An example config file is provided:
 	  "scale": 5,
 	  "prob": 0.4,  
 	  "outfile": "data/label_images/2019-0830-195300-DSC04880-N7251F_merged_label.png",
-	  
+
 	  "to_merge": {
 	  "water":  "data/label_images/2019-0830-195300-DSC04880-N7251F_water_no_water_label.png",
 	  "veg": "data/label_images/2019-0830-195300-DSC04880-N7251F_vegetation_no_vegetation_label.png",
 	  "anthro": "data/label_images/2019-0830-195300-DSC04880-N7251F_anthro_no_anthro_label.png",
 	  "substrate": "data/label_images/2019-0830-195300-DSC04880-N7251F_sand_mud_gravel_boulders_snow_ice_wrack_peat_indeterminate_label.png"
 	   },
-	   
-	  "classes1": 
+
+	  "classes1":
 	  {
 	   "water": "#3b81d0",
 	   "no_water": "#e35259"
 	  },
-	  
+
 	  "classes2":
 	  {
 	   "vegetation": "#29f120",
 	   "no_vegetation": "#e35259"
 	  },  
-	  
+
 	  "classes3":
 	  {
 	   "anthro": "#f12063",
 	   "no_anthro": "#e35259"
 	  },  
-	  
+
 	  "classes4":
 	  {
 	   "sand": "#c0d03b",
@@ -214,7 +214,7 @@ where most of the fields are the same as above, except
 * "classes1", "classes2", etc: these are the class names and hex color codes associated with each label image in "to_merge", in order
 
 
-<!-- 
+<!--
 ## compiling doodler.py
 - conda activate doodler
 - pip install --upgrade 'setuptools<45.0.0'
