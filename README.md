@@ -23,6 +23,15 @@ Label images that are outputted by `doodler.py` can be merged using `merge.py`, 
 
 This is python software that is designed to be used from within a `conda` environment. After setting up that environment, the user places imagery in a folder and creates a `config` file that tells the program where the imagery is and what classes will be labeled. The minimum number of classes is 2. There is no limit to the maximum number of classes.
 
+This tool can be used in a few different ways, including:
+
+1. Create a label image in one go, by defining all classes at once in a single config file
+
+2. Create a label image in stages, by defining subsets of classes in multiple config files (then optionally merging them afterwards using `merge.py`)
+
+The second option is possibly more time-efficient for complex scenes
+
+
 ### create environment
 ```
 conda env create -f doodler.yml
@@ -114,7 +123,7 @@ python doodler.py -c config_file.json
 The title of the window is the label that will be associated with the pixels
 you draw on, by holding down the left mouse button. After you are done with label press `escape` (Esc key, usually the top left corner on your keyboard). You can increase and decrease the brush width with `+ / -` keys. You can also undo a mistake with the `z` key.
 
-* Use s to skip a square
+* Use s to skip forward a square (note that this will not record any labels done on the current square - this feature is for squares with no labels to make)
 * Use b to go back a square
 * Use number keys to switch label
 
@@ -213,5 +222,5 @@ where most of the fields are the same as above, except
 - ./dist/doodler -->
 
 ## Improvements coming soon
-* support for geotiffs
+* support for 4+ band imagery
 * compiled executables

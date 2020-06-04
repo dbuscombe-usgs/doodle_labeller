@@ -8,6 +8,7 @@ import sys, getopt
 import cv2
 import numpy as np
 from glob import glob
+import rasterio
 
 import pydensecrf.densecrf as dcrf
 from pydensecrf.utils import create_pairwise_bilateral, unary_from_labels
@@ -111,12 +112,26 @@ def merge_labels(msk, img, classes):
     rgb = []
     for c in classes_colors:
        rgb.append(tuple(int(c.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)))
-	
-    counter = 0
-    for k in rgb:
-       ind = (img[:,:,0]==classes_codes[counter])
-       msk[ind] = k 
-       counter += 1	   
+    	
+    if len(classes_codes)==1: #binary
+       counter = 0
+       for k in rgb:
+          ind = (img[:,:,0]==classes_codes[counter])
+          msk[ind] = k 
+          counter += 1	 
+    else:
+       msk2 = msk.copy()
+       tmp = np.round(len(classes)*(img[:,:,0]/255.)).astype('int')-1
+          
+       counter = 0
+       for k in rgb:
+          ind = (tmp==classes_codes[counter])
+          msk2[ind] = k 
+          counter += 1	
+       msk2[msk>0] = msk[msk>0]
+       msk=msk2.copy()
+       del msk2, tmp
+            
     return msk, classes_names, rgb
 
 # =========================================================
@@ -132,7 +147,7 @@ def OpenImage(image_path, im_order):
         numpy array of image 2D or 3D #NOTE: want this to do multispectral
     """
     if image_path.lower()[-3:] == 'tif':
-        img = WF.ReadGeotiff(image_path, im_order) #need to implemten WF
+        img = ReadGeotiff(image_path, im_order) 
     else:
         img = cv2.imread(image_path)
         if im_order=='RGB':
@@ -235,6 +250,51 @@ def sliding_window(a,ws,ss = None,flatten = True):
 
     return a.reshape(dim), newshape
 
+
+#===============================================================
+def ReadGeotiff(image_path, rgb):
+    """
+    This function reads image in GeoTIFF format.
+    TODO: Fill in the doc string better
+    Parameters
+    ----------
+    image_path : string
+        full or relative path to the tiff image
+    rgb : TYPE
+        is it RGB or BGR
+    Returns
+    -------
+    img : array
+        2D or 3D numpy array of the image
+    """
+    with rasterio.open(image_path) as src:
+        layer = src.read()
+
+    if layer.shape[0] == 3:
+        r, g, b = layer
+        if rgb == 'RGB':
+            img = np.dstack([r, g, b])
+        else:
+            img = np.dstack([b, g, r])
+    elif layer.shape[0] == 4:
+        r, g, b, gd = layer
+        if rgb == 'RGB':
+            img = np.dstack([r, g, b])
+        else:
+            img = np.dstack([b, g, r])
+    # TODO: I have not tested any of the rest of this project for one layer
+    else:
+        img = layer
+
+    if np.max(img) > 255:
+        img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
+        img = img.astype('uint8')
+
+    img[img[:,:,2] == 255] = 254
+
+    return img
+
+
 #===============================================================
 if __name__ == '__main__':
 
@@ -273,11 +333,11 @@ if __name__ == '__main__':
     class_dict = {}
 		
     ## get rgb label for first label image
-    msk, classes_names, rgb = merge_labels(msk, img, config[class_sets[0]])
+    msk, classes_names, rgb = merge_labels(msk, cv2.imread(to_merge[0]), config[class_sets[0]])
 	
     ##update dictionary	
     for c,r in zip(classes_names, rgb):
-       class_dict[c] = r
+       class_dict[c] = r    
     
     ## do same for rest of class sets
     for ii,cc in zip(to_merge[1:], class_sets[1:]):
@@ -287,6 +347,7 @@ if __name__ == '__main__':
 
     ##write class dict to csv file
     with open(config['out_csv'], 'w') as f:
+       f.write("%s,%s,%s,%s\n" % ('class', 'r', 'g', 'b' ))
        for key in class_dict.keys():
           f.write("%s,%s\n" % (key, str(class_dict[key]).replace(')','').replace('(','')) )
 
@@ -319,62 +380,73 @@ if __name__ == '__main__':
     nx, ny, nz = np.shape(img)
     ##number of chunks in each dimension	
     num_chunks = gcd(nx, ny)
-    ##size of each chunk
-    sx = int(nx/num_chunks)
-    sy = int(ny/num_chunks)
-    ssx = int(overlap*sx)
-    ssy = int(overlap*sy)
+    
+    if (num_chunks==nx) | (num_chunks==ny):
+       ## do this without windowing/overlap
+       res = getCRF(img, msk_flat+1, class_dict)     
+       
+    else:
+    
+       ##size of each chunk
+       sx = int(nx/num_chunks)
+       sy = int(ny/num_chunks)
+       ssx = int(overlap*sx)
+       ssy = int(overlap*sy)
 	
-    ##gets small overlapped image windows	
-    Z, indZ = sliding_window(img, (sx, sy, nz), (ssx, ssy, nz))
-    del img
-    ##gets small overlapped label windows	
-    L, indL = sliding_window(msk_flat, (sx, sy), (ssx, ssy))
-    del msk_flat	
+       ##gets small overlapped image windows	
+       Z, indZ = sliding_window(img, (sx, sy, nz), (ssx, ssy, nz))
+       del img
+       ##gets small overlapped label windows	
+       L, indL = sliding_window(msk_flat, (sx, sy), (ssx, ssy))
+       del msk_flat	
 
-    ## process each small image chunk in parallel 
-    o = Parallel(n_jobs = -1, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=None)(delayed(getCRF)(Z[k], L[k], class_dict) for k in range(len(Z)))
+       ## process each small image chunk in parallel 
+       o = Parallel(n_jobs = -1, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=None)(delayed(getCRF)(Z[k], L[k], class_dict) for k in range(len(Z)))
 
-    ## get grids to deal with overlapping values
-    gridy, gridx = np.meshgrid(np.arange(ny), np.arange(nx))
-    ## get sliding windows
-    Zx,_ = sliding_window(gridx, (sx, sy), (ssx, ssy))
-    Zy,_ = sliding_window(gridy, (sx, sy), (ssx, ssy))
+       ## get grids to deal with overlapping values
+       gridy, gridx = np.meshgrid(np.arange(ny), np.arange(nx))
+       ## get sliding windows
+       Zx,_ = sliding_window(gridx, (sx, sy), (ssx, ssy))
+       Zy,_ = sliding_window(gridy, (sx, sy), (ssx, ssy))
 	
-    ## get two grids, one for division and one for accumulation
-    av = np.zeros((nx, ny))	
-    out = np.zeros((nx, ny))	
-    for k in range(len(o)):
-       av[Zx[k], Zy[k]] += 1
-       out[Zx[k], Zy[k]] += o[k]
+       ## get two grids, one for division and one for accumulation
+       av = np.zeros((nx, ny))	
+       out = np.zeros((nx, ny))	
+       for k in range(len(o)):
+          av[Zx[k], Zy[k]] += 1
+          out[Zx[k], Zy[k]] += o[k]
 
-    ## delete what we no longer need
-    del Zx, Zy, o
-    ## make the grids by taking an average, plus one, and floor	
-    res = np.floor(1+(out/av)) 
-    del out, av
+       ## delete what we no longer need
+       del Zx, Zy, o
+       ## make the grids by taking an average, plus one, and floor	
+       res = np.floor(1+(out/av)) 
+       del out, av
 
-    ## to do this without windowing/overlap, we would do	
-    #res = getCRF(img, msk_flat, class_dict)+1
-
-    ## median filter to remove remaining high-freq spatial noise (radius of 11 pixels)
-    res = median(res.astype(np.uint8), disk(11))
+    ## median filter to remove remaining high-freq spatial noise (radius of N pixels)
+    N = np.round(11*(ny/7362)).astype('int') #11 when ny=7362
+    
+    res = median(res.astype(np.uint8), disk(N))
+    
     ## replace zeros with most populous value	
-    res[res==0] = np.argmax(np.bincount(res.flatten()))	
+    ##res[res==0] = np.argmax(np.bincount(res.flatten()))	
 	
     ## write out the refined flattened label image
     print("Writing our 2D label image to %s" % (config['outfile'].replace('.png', '_flat.png')))
     cv2.imwrite(config['outfile'].replace('.png', '_flat.png'), 
-	            np.round(255*(res/np.max(res))).astype('uint8'))    
+	            np.round(255*(res/len(class_dict) )).astype('uint8')) ##  
 		
     ## allocate empty 3D array of same x-y dimensions
     msk = np.zeros((res.shape)+(3,), dtype=np.uint8)
-    	
+    
+    ##do the rgb allocation	
     for k in np.unique(res):
        ind = (res==k)
        msk[ind] = cols[k-1]
     del res
-       
+    
+    ##mask out null portions of image
+    msk[np.sum(img,axis=2)==(254*3)] = 0  
+        
     ## write out smoothed rgb image
     print("Writing our RGB image to %s" % (config['outfile'].replace('.png', '_crf.png')))
     cv2.imwrite(config['outfile'].replace('.png', '_crf.png'), cv2.cvtColor(msk, cv2.COLOR_RGB2BGR) )

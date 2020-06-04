@@ -14,6 +14,7 @@ import sys, getopt
 import cv2
 import numpy as np
 from glob import glob
+import rasterio
 
 import pydensecrf.densecrf as dcrf
 from pydensecrf.utils import create_pairwise_bilateral, unary_from_labels
@@ -37,10 +38,21 @@ def PlotAndSave(img, resr, name, config, class_str):
     """
     outfile = config['label_folder']+os.sep+name+"_"+class_str+'_label.png'
 
-    cv2.imwrite(outfile,
-                np.round(255*(resr/np.max(resr))).astype('uint8'))
+    if len(config['classes'])==2:
+       resr[resr==0] = 2 #2 is null class
+       resr = resr-1
+       cv2.imwrite(outfile,
+                np.round(255*((resr)/np.max(resr))).astype('uint8'))
+    else:
+       cv2.imwrite(outfile,
+                np.round(255*(resr/len(config['classes']))).astype('uint8')) ##np.max(resr)
 
-    alpha_percent = 0.3
+
+    resr = resr.astype('float')
+    resr[resr<1] = np.nan
+    resr = resr-1
+
+    alpha_percent = 0.75
 
     cmap = colors.ListedColormap(list(config['classes'].values()))
 
@@ -118,6 +130,7 @@ def getCRF(img, Lc, label_lines):
     Output:
         res : CRF-refined 2D label image
     """
+    
     if np.mean(img)<1:
        H = img.shape[0]
        W = img.shape[1]
@@ -155,7 +168,7 @@ def getCRF(img, Lc, label_lines):
                         normalization=dcrf.NORMALIZE_SYMMETRIC)
           Q = d.inference(config['n_iter'])
 	
-          R.append(np.argmax(Q, axis=0).reshape((H, W)))
+          R.append(1+np.argmax(Q, axis=0).reshape((H, W)))
 
        res = np.round(np.median(R, axis=0))
        del R
@@ -442,7 +455,7 @@ def OpenImage(image_path, im_order):
         numpy array of image 2D or 3D #NOTE: want this to do multispectral
     """
     if image_path.lower()[-3:] == 'tif':
-        img = WF.ReadGeotiff(image_path, im_order) #need to implemten WF
+        img = ReadGeotiff(image_path, im_order)
     else:
         img = cv2.imread(image_path)
         if im_order=='RGB':
@@ -504,6 +517,50 @@ def StepCalc(im_shape, max_x_steps=None, max_y_steps=None):
 
 
 #===============================================================
+def ReadGeotiff(image_path, rgb):
+    """
+    This function reads image in GeoTIFF format.
+    TODO: Fill in the doc string better
+    Parameters
+    ----------
+    image_path : string
+        full or relative path to the tiff image
+    rgb : TYPE
+        is it RGB or BGR
+    Returns
+    -------
+    img : array
+        2D or 3D numpy array of the image
+    """
+    with rasterio.open(image_path) as src:
+        layer = src.read()
+
+    if layer.shape[0] == 3:
+        r, g, b = layer
+        if rgb == 'RGB':
+            img = np.dstack([r, g, b])
+        else:
+            img = np.dstack([b, g, r])
+    elif layer.shape[0] == 4:
+        r, g, b, gd = layer
+        if rgb == 'RGB':
+            img = np.dstack([r, g, b])
+        else:
+            img = np.dstack([b, g, r])
+    # TODO: I have not tested any of the rest of this project for one layer
+    else:
+        img = layer
+
+    if np.max(img) > 255:
+        img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
+        img = img.astype('uint8')
+
+    img[img[:,:,2] == 255] = 254
+
+    return img
+
+
+#===============================================================
 if __name__ == '__main__':
 
     argv = sys.argv[1:]
@@ -527,14 +584,16 @@ if __name__ == '__main__':
     # for k in config.keys():
     #     exec(k+'=config["'+k+'"]')
 
+    if len(config['classes'])==1:
+       print("You must have a minimum of 2 classes, i.e. 1) object of interest and 2) background")
+       sys.exist(2)
+
     class_str = '_'.join(config['classes'].keys())
 
     files = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*.*')))
 
     N = []
-
     #N.append(files[0].split(os.sep)[-1].split('.')[0])
-    # print(N)
 
     # masks are binary labels where the null class is zero
     masks = []
@@ -560,7 +619,8 @@ if __name__ == '__main__':
         out = out.astype('int')
         nx, ny = np.shape(out)
         gridy, gridx = np.meshgrid(np.arange(ny), np.arange(nx))
-
+        o_img = OpenImage(f, config['im_order'])
+        
         counter = 0
         for ind in Z:
            np.savez(config['label_folder']+os.sep+name+"_tmp"+str(counter)+"_"+class_str+".npz", label=out[ind[0]:ind[1], ind[2]:ind[3]], image=o_img[ind[0]:ind[1], ind[2]:ind[3]], grid_x=gridx[ind[0]:ind[1], ind[2]:ind[3]], grid_y=gridy[ind[0]:ind[1], ind[2]:ind[3]])
@@ -592,35 +652,19 @@ if __name__ == '__main__':
            resr[l['grid_x'], l['grid_y']] =o[k]
         del o, l
 
-        if masks:
-            for k in masks:
-                resr[k==1] = 1
-
         imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
         img = OpenImage(imfile, config['im_order'])
+
+        resr[np.sum(img,axis=2)==(254*3)] = 0
+
+        if masks:
+           for k in masks:
+              ##k==1 is the mask
+              resr[k==1] = 0 #0=null category
 
         PlotAndSave(img.copy(), resr, name, config, class_str)
 
         for f in label_files:
            os.remove(f)
 
-        #
-        #
-        #
-        #
-        #
-        #
-        #
-        #
-        #
-        #
-        #
-        #
-        #
-        #
-        #
-        #
-        #
-        #
-        #
-        # x
+
