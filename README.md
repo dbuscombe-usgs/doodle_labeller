@@ -53,7 +53,7 @@ The software can be used to:
 
 ### Getting set up video
 
-This video demonstrates how to download the software and install the conda environment
+[This video](https://drive.google.com/file/d/111Ezrz0lU_UAFt6J9RMo8LLaVbEGgW-_/view?usp=sharing) demonstrates how to download the software and install the conda environment
 
 ### Labeling videos
 
