@@ -4,3 +4,8 @@ dist/*
 doodler.spec
 merge.spec
 data/label_images/*.npy
+data/labels_done/madeira/*.npy
+data/labels_done/topsail/*.npy
+data/labels_done/NCsample/*.npy
+data/labels_done/greatmarsh1/*.npy
+data/labels_done/greatmarsh2/*.npy

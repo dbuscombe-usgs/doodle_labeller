@@ -12,15 +12,25 @@
 
 
 ## Rationale
-There are many great tools for exhaustive image labeling for segmentation tasks, using polygons. Examples include [makesense.ai](www.makesense.ai) and [cvat](https://cvat.org). However, for high-resolution imagery with large spatial footprints and complex scenes, such as aerial and satellite imagery, exhaustive labeling using polygonal tools is prohibitively time-consuming.
+There are many great tools for exhaustive (i.e. whole image) image labeling for segmentation tasks, using polygons. Examples include [makesense.ai](www.makesense.ai) and [cvat](https://cvat.org). However, for high-resolution imagery with large spatial footprints and complex scenes, such as aerial and satellite imagery, exhaustive labeling using polygonal tools can be prohibitively time-consuming. This is especially true of scenes with many classes of interest, and covering relatively small, spatially discontinuous regions of the image.
 
-What is generally required is a semi-supervised tool for efficient image labeling, based on sparse examples provided by a human annotator.
+What is generally required in the above case is a semi-supervised tool for efficient image labeling, based on sparse examples provided by a human annotator. Those sparse annotations are used by a secondary automated process to estimate the class of every pixel in the image. The number of pixels annotated by the human annotator is typically a small fraction of the total pixels in the image.  
 
 `Doodler` is a tool for exemplative, not exhaustive, labelling. The approach taken here is to freehand label only some of the scene, then use a model to complete the scene. Sparse annotations are provided to a Conditional Random Field (CRF) model, that develops a scene-specific model for each class and creates a dense (i.e. per pixel) label image based on the information you provide it. This approach can reduce the time required for detailed labeling of large and complex scenes by an order of magnitude or more.
 
 This tool is also set up to tackle image labelling in stages, using minimal annotations. For example, by labeling individual classes then using the resulting binary label images as masks for the imagery to be labeled for subsequent classes. Labeling is acheived using the `doodler.py` script
 
 Label images that are outputted by `doodler.py` can be merged using `merge.py`, which uses a CRF approach again to refine labels based on a windowing approach with 50% overlap. This refines labels further based on the underlying image.
+
+
+## Terminology
+
+* image: a 3-band geotiff, or 3-band jpg/jpeg/JPG/JPEG, png/PNG, or tiff/tif/TIF/TIFF
+* class: a pre-determined category
+* label: an annotation made on an image attributed to a class (either manually or automatically - in this program, annotations are manual)
+* label image: an image where each pixel has been labeled with a class (either manually or automatically - in this program, the label image is generated automatically using a machine learning algorithm called a CRF)
+* binary label image: a label image of 2 classes (the class of interest and everything else)
+
 
 ## How to use
 
@@ -32,15 +42,55 @@ This tool can be used in a few different ways, including:
 
 2. Create a label image in stages, by defining subsets of classes in multiple config files (then optionally merging them afterwards using `merge.py`)
 
-The second option is possibly more time-efficient for complex scenes
+The second option is possibly more time-efficient for complex scenes. It might also be advantageous for examining the error of labels individually.
 
+The software can be used to:
+
+1. label multiple images at once, without pre-masking, with 2 or more classes
+2. label a single image, with pre-masking (mask out imagery with a previously created binary mask), with 2 or more classes
+3. merge multiple label images together, each with with 2 or more classes
+
+
+### Getting set up video
+
+This video demonstrates how to download the software and install the conda environment
+
+### Labeling videos
+
+I made a series of videos that demonstrate how to use the software using example data provided in this repository. My commentary gives more detailed information on how to label, and how the software works
+
+1. [Video 1](https://drive.google.com/file/d/1UuOWLXk7se-XsTCpKxscNA5vkGtSA8Tz/view?usp=sharing): Creating a binary mask of water / no water, using no pre-masking
+2. [Video 2](https://drive.google.com/file/d/1KGuB_DzrQUMOapllfz7j9tbaeRT9BMEO/view?usp=sharing): Creating a binary mask of vegetation / no vegetation, using pre-masking
+3. [Video 3](https://drive.google.com/file/d/1AF3rmi--bHFiryWU-sTD94ZlFnDWlxJA/view?usp=sharing): Creating a binary mask of anthropogenic classes / no anthro, using pre-masking  
+4. [Video 4](https://drive.google.com/file/d/1Il4PdvLT35IXlQg47Mq0tcs_Ff0I04iN/view?usp=sharing): Creating a multiclass label images of substrates, using pre-masking
+5. [Video 5](https://drive.google.com/file/d/1YNxE91cBBr6IRCLd2mXliyYoyMxLNbnY/view?usp=sharing): Merging multiclass label images of substrates with binary masks of water, vegetation, and anthro
+
+### Clone the github repo
+
+```
+git clone --depth 1 https://github.com/dbuscombe-usgs/doodle_labeller.git
+```
 
 ### create environment
+
+If you are a regular conda user, now would be a good time to
+
+```
+conda clean --all
+conda update conda
+conda update anaconda
+```
+
+Issue the following command from your Anaconda shell, power shell, or terminal window:
+
 ```
 conda env create -f doodler.yml
 ```
 
 ### Activate environment
+
+Use this command to activate the environment, in order to use it
+
 ```
 conda activate doodler
 ```
@@ -213,6 +263,13 @@ where most of the fields are the same as above, except
 * "to_merge": a list of label images (generated by doodler.py) to merge
 * "classes1", "classes2", etc: these are the class names and hex color codes associated with each label image in "to_merge", in order
 
+## Improvements coming soon
+* export label images as geotiff
+* support for 4+ band imagery
+* compiled executables
+* lookup table for consistent hex colors for common classes
+
+
 
 <!--
 ## compiling doodler.py
@@ -223,7 +280,3 @@ where most of the fields are the same as above, except
 - pyinstaller --onefile --noconfirm doodler.py --clean --hidden-import pydensecrf.eigen
 - conda deactivate
 - ./dist/doodler -->
-
-## Improvements coming soon
-* support for 4+ band imagery
-* compiled executables

@@ -1,0 +1,29 @@
+{
+  "image_folder" : "data/images",
+  "label_folder": "data/label_images",
+  "max_x_steps": 6,
+  "max_y_steps": 6,
+  "ref_im_scale": 0.8,
+  "lw": 5,
+  "im_order": "RGB",
+  "theta_col": 40,
+  "theta_spat": 5,
+  "n_iter": 10,
+  "compat_col": 40,
+  "compat_spat": 5,
+  "scale": 5,
+  "prob": 0.4,
+  "apply_mask": {
+  "water":  "data/label_images/2018_08_20_Greatmarsh_15cm_utm_35000_25000_water_no_water_label.png",
+  "veg":  "data/label_images/2018_08_20_Greatmarsh_15cm_utm_35000_25000_vegetation_no_vegetation_label.png"
+   },
+  "classes": {
+   "sand": "#c0d03b",
+   "mud": "#62894d",
+   "gravel": "#395c27",
+   "boulders": "#94925c",
+   "snow_ice": "#888c8c",
+   "wrack_peat": "#23ad96",
+   "indeterminate": "#9e289c"
+   }
+}

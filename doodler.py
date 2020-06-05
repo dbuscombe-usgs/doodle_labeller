@@ -43,14 +43,15 @@ def PlotAndSave(img, resr, name, config, class_str):
        resr = resr-1
        cv2.imwrite(outfile,
                 np.round(255*((resr)/np.max(resr))).astype('uint8'))
+
     else:
        cv2.imwrite(outfile,
                 np.round(255*(resr/len(config['classes']))).astype('uint8')) ##np.max(resr)
 
 
-    resr = resr.astype('float')
-    resr[resr<1] = np.nan
-    resr = resr-1
+       resr = resr.astype('float')
+       resr[resr<1] = np.nan
+       resr = resr-1
 
     alpha_percent = 0.75
 
