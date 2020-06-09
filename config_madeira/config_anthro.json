@@ -14,11 +14,13 @@
   "scale": 5,
   "prob": 0.4,
   "apply_mask": {
-  "water":  "data/label_images/2017_914_maderia_utm_5000_5000_water_no_water_label.png",
-  "veg": "data/label_images/2017_914_maderia_utm_5000_5000_vegetation_no_vegetation_label.png"
+  "water":  "data/label_images/2017_914_maderia_utm_12500_12500_water_no_water_label.png",
+  "veg": "data/label_images/2017_914_maderia_utm_12500_12500_vegetation_no_vegetation_label.png"
    },
   "classes": {
    "anthro": "#f12063",
    "no_anthro": "#f1ee20"
    }
 }
+
+

@@ -8,14 +8,14 @@
   "compat_spat": 5,
   "scale": 5,
   "prob": 0.4,  
-  "outfile": "data/label_images/2017_914_maderia_utm_5000_5000_merged_label.png",
-  "out_csv": "data/label_images/2017_914_maderia_utm_5000_5000_merged_label.csv",
+  "outfile": "data/label_images/2017_914_maderia_utm_12500_12500_merged_label.png",
+  "out_csv": "data/label_images/2017_914_maderia_utm_12500_12500_merged_label.csv",
   
   "to_merge": {
-  "water":  "data/label_images/2017_914_maderia_utm_5000_5000_water_no_water_label.png",
-  "veg": "data/label_images/2017_914_maderia_utm_5000_5000_vegetation_no_vegetation_label.png",
-  "anthro": "data/label_images/2017_914_maderia_utm_5000_5000_anthro_no_anthro_label.png",
-  "substrate": "data/label_images/2017_914_maderia_utm_5000_5000_sand_mud_gravel_boulders_snow_ice_wrack_peat_indeterminate_label.png"
+  "water":  "data/label_images/2017_914_maderia_utm_12500_12500_water_no_water_label.png",
+  "veg": "data/label_images/2017_914_maderia_utm_12500_12500_vegetation_no_vegetation_label.png",
+  "anthro": "data/label_images/2017_914_maderia_utm_12500_12500_anthro_no_anthro_label.png",
+  "substrate": "data/label_images/2017_914_maderia_utm_12500_12500_sand_mud_gravel_boulders_snow_ice_wrack_peat_indeterminate_label.png"
    },
    
   "classes1": 

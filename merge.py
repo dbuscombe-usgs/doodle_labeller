@@ -384,9 +384,13 @@ if __name__ == '__main__':
     if (num_chunks==nx) | (num_chunks==ny):
        ## do this without windowing/overlap
        res = getCRF(img, msk_flat+1, class_dict)     
+    
+    elif num_chunks>100: 
+
+       res = getCRF(img, msk_flat+1, class_dict)         
        
     else:
-    
+       print("working on %i chunks" % (int(num_chunks)))    
        ##size of each chunk
        sx = int(nx/num_chunks)
        sy = int(ny/num_chunks)
@@ -399,6 +403,8 @@ if __name__ == '__main__':
        ##gets small overlapped label windows	
        L, indL = sliding_window(msk_flat, (sx, sy), (ssx, ssy))
        del msk_flat	
+
+       print("%i chunks" % (len(Z)))
 
        ## process each small image chunk in parallel 
        o = Parallel(n_jobs = -1, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=None)(delayed(getCRF)(Z[k], L[k], class_dict) for k in range(len(Z)))

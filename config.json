@@ -15,13 +15,15 @@
   "prob": 0.4,
   "apply_mask": "None",
   "classes": {
-   "Surf_Swash": "#fcf9f9",
-   "Water": "#3b81d0",
-   "BareSand": "#c0d03b",
-   "Grass_Shrub": "#62894d",
-   "WoodyVeg": "#395c27",
-   "MarshPlatform": "#94925c",
-   "Road": "#888c8c",
-   "Anthro": "#23ad96"
- }
+   "water": "#3b81d0",
+   "anthro": "#f12063",     
+   "vegetation": "#49ac84",  
+   "sand": "#c0d03b",
+   "mud": "#62894d",
+   "gravel": "#395c27",
+   "boulders": "#94925c",
+   "snow_ice": "#888c8c",
+   "wrack_peat": "#23ad96",
+   "indeterminate": "#9e289c"
+   }
 }
