@@ -24,15 +24,16 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from joblib import Parallel, delayed
 
 # =========================================================
-def PlotAndSave(img, resr, name, config, class_str):
+def PlotAndSave(img, resr, name, config, class_str, profile):
     """
     Makes plots and save label images
     Input:
-        img: 
+        img:
 		resr:
-		name: 
-		config: 
-		class_str: 
+		name:
+		config:
+		class_str:
+        profile: rasterio file profile (CRS, etc)
     Output:
         None
     """
@@ -45,15 +46,22 @@ def PlotAndSave(img, resr, name, config, class_str):
                 np.round(255*((resr)/np.max(resr))).astype('uint8'))
 
     else:
-       cv2.imwrite(outfile,
-                np.round(255*(resr/len(config['classes']))).astype('uint8')) ##np.max(resr)
+       lab = np.round(255*(resr/len(config['classes'])))
+       cv2.imwrite(outfile, lab.astype('uint8')) ##np.max(resr)
+
+       image_path = outfile.replace('.png','.tif')
+
+       WriteGeotiff(image_path, lab, profile)
 
 
        resr = resr.astype('float')
        resr[resr<1] = np.nan
        resr = resr-1
 
-    alpha_percent = 0.75
+    try:
+       alpha_percent = config['alpha'] #0.75
+    except:
+       alpha_percent = 0.5
 
     cmap = colors.ListedColormap(list(config['classes'].values()))
 
@@ -86,21 +94,21 @@ def DoCrf(file, config, name):
     """
     Loads imagery and labels from npz file, and calls getCRF
     Input:
-        file: 
-		name: 
-		config: 
+        file:
+		name:
+		config:
     Output:
-        res: 
+        res:
     """
     data = np.load(file)
 
     res = getCRF(data['image'],
                             data['label'],
                             config['classes'])
- 	
+
     if np.all(res)==254:
        res *= 0
-	   
+
     return res
 
 # =========================================================
@@ -118,12 +126,12 @@ def getCRF(img, Lc, label_lines):
 		config['compat_col']: label compatibilities for the colour-dependent term
 		config['compat_spat']: label compatibilities for the colour-independent term
 		config['scale']: spatial smoothness parameter
-		config['prob']: assumed probability of input labels	
+		config['prob']: assumed probability of input labels
 	Hard-coded variables:
         kernel_bilateral: DIAG_KERNEL kernel precision matrix for the colour-dependent term
             (can take values CONST_KERNEL, DIAG_KERNEL, or FULL_KERNEL).
         normalisation_bilateral: NORMALIZE_SYMMETRIC normalisation for the colour-dependent term
-            (possible values are NO_NORMALIZATION, NORMALIZE_BEFORE, NORMALIZE_AFTER, NORMALIZE_SYMMETRIC).		
+            (possible values are NO_NORMALIZATION, NORMALIZE_BEFORE, NORMALIZE_AFTER, NORMALIZE_SYMMETRIC).
         kernel_gaussian: DIAG_KERNEL kernel precision matrix for the colour-independent
             term (can take values CONST_KERNEL, DIAG_KERNEL, or FULL_KERNEL).
         normalisation_gaussian: NORMALIZE_SYMMETRIC normalisation for the colour-independent term
@@ -131,12 +139,12 @@ def getCRF(img, Lc, label_lines):
     Output:
         res : CRF-refined 2D label image
     """
-    
+
     if np.mean(img)<1:
        H = img.shape[0]
        W = img.shape[1]
-       res = np.zeros((H,W)) * np.mean(Lc)	   
-	
+       res = np.zeros((H,W)) * np.mean(Lc)
+
     else:
 
        if np.ndim(img) == 2:
@@ -145,8 +153,8 @@ def getCRF(img, Lc, label_lines):
        W = img.shape[1]
 
        R = []
-   
-       ## loop through the 'theta' values (half, given, and double)	   
+
+       ## loop through the 'theta' values (half, given, and double)
        for mult in [.5,1,2]:
           d = dcrf.DenseCRF2D(H, W, len(label_lines) + 1)
           U = unary_from_labels(Lc.astype('int'),
@@ -168,7 +176,7 @@ def getCRF(img, Lc, label_lines):
                         kernel=dcrf.DIAG_KERNEL,
                         normalization=dcrf.NORMALIZE_SYMMETRIC)
           Q = d.inference(config['n_iter'])
-	
+
           R.append(1+np.argmax(Q, axis=0).reshape((H, W)))
 
        res = np.round(np.median(R, axis=0))
@@ -417,7 +425,7 @@ class MaskPainter():
 # =========================================================
 def TimeScreen():
     """
-    Starts a timer and gets the screen size. 
+    Starts a timer and gets the screen size.
     Input:
         nothing
     Output:
@@ -456,15 +464,15 @@ def OpenImage(image_path, im_order):
         numpy array of image 2D or 3D #NOTE: want this to do multispectral
     """
     if image_path.lower()[-3:] == 'tif':
-        img = ReadGeotiff(image_path, im_order)
+        img, profile = ReadGeotiff(image_path, im_order)
     else:
         img = cv2.imread(image_path)
         if im_order=='RGB':
            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         elif im_order=='BGR':
            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-
-    return img
+        profile = None
+    return img, profile
 
 
 #===============================================================
@@ -518,6 +526,31 @@ def StepCalc(im_shape, max_x_steps=None, max_y_steps=None):
 
 
 #===============================================================
+def WriteGeotiff(image_path, lab, profile):
+    """
+    This function writes a 1-band label image in GeoTIFF format.
+    TODO: Fill in the doc string better
+    Parameters
+    ----------
+    image_path : string
+        full or relative path to the tiff image you'd like to create
+    lab : 2D label raster
+    profile: rasterio profile of the original geotiff image
+    """
+
+    with rasterio.Env():
+       # change the band count to 1, set the
+       # dtype to uint8, and specify LZW compression.
+       profile.update(
+          dtype=rasterio.uint8,
+          count=1,
+          compress='lzw')
+
+       with rasterio.open(image_path, 'w', **profile) as dst:
+          dst.write(lab.astype(rasterio.uint8), 1)
+
+
+#===============================================================
 def ReadGeotiff(image_path, rgb):
     """
     This function reads image in GeoTIFF format.
@@ -535,6 +568,7 @@ def ReadGeotiff(image_path, rgb):
     """
     with rasterio.open(image_path) as src:
         layer = src.read()
+        profile = src.profile
 
     if layer.shape[0] == 3:
         r, g, b = layer
@@ -558,7 +592,7 @@ def ReadGeotiff(image_path, rgb):
 
     img[img[:,:,2] == 255] = 254
 
-    return img
+    return img, profile
 
 
 #===============================================================
@@ -600,13 +634,15 @@ if __name__ == '__main__':
     masks = []
     if config["apply_mask"]!='None':
         for k in config["apply_mask"].keys():
-            masks.append((OpenImage(config["apply_mask"][k], None)[:,:,0]==0).astype('int'))
+            tmp, profile = OpenImage(config["apply_mask"][k], None)
+            tmp = (tmp[:,:,0]==0).astype('int')
+            masks.append(tmp)
 
 
     for f in files:
 
         start, screen_size = TimeScreen()
-        o_img = OpenImage(f, config['im_order'])
+        o_img, profile = OpenImage(f, config['im_order'])
 
         if masks:
             for k in masks:
@@ -620,8 +656,8 @@ if __name__ == '__main__':
         out = out.astype('int')
         nx, ny = np.shape(out)
         gridy, gridx = np.meshgrid(np.arange(ny), np.arange(nx))
-        o_img = OpenImage(f, config['im_order'])
-        
+        o_img, profile = OpenImage(f, config['im_order'])
+
         counter = 0
         for ind in Z:
            np.savez(config['label_folder']+os.sep+name+"_tmp"+str(counter)+"_"+class_str+".npz", label=out[ind[0]:ind[1], ind[2]:ind[3]], image=o_img[ind[0]:ind[1], ind[2]:ind[3]], grid_x=gridx[ind[0]:ind[1], ind[2]:ind[3]], grid_y=gridy[ind[0]:ind[1], ind[2]:ind[3]])
@@ -654,7 +690,7 @@ if __name__ == '__main__':
         del o, l
 
         imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
-        img = OpenImage(imfile, config['im_order'])
+        img, profile = OpenImage(imfile, config['im_order'])
 
         resr[np.sum(img,axis=2)==(254*3)] = 0
 
@@ -663,9 +699,7 @@ if __name__ == '__main__':
               ##k==1 is the mask
               resr[k==1] = 0 #0=null category
 
-        PlotAndSave(img.copy(), resr, name, config, class_str)
+        PlotAndSave(img.copy(), resr, name, config, class_str, profile)
 
         for f in label_files:
            os.remove(f)
-
-

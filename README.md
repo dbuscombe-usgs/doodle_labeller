@@ -126,6 +126,7 @@ Several example config files are provided. A generic multi-label case would be s
 	  "compat_spat": 5,
 	  "scale": 5,
 	  "prob": 0.4,
+		"alpha": 0.5,
 	  "apply_mask": "None",
 	  "classes": {
 	   "Surf_Swash": "#fcf9f9",
@@ -154,6 +155,7 @@ where
 * "compat_spat": label compatibilities for the colour-independent term
 * "scale": spatial smoothness parameter (pixels)
 * "prob": assumed probability of input labels
+* 'alpha': the degree of transparency in merged image-output plots
 * "n_iter": number of iterations of CRF inference.
 * "classes": a dictionary of class names and associated colors as hex codes. There are various online color pickers including [this one](https://htmlcolorcodes.com/)
 * "apply_mask": either `None` (if no pre-masking) or a list of binary label images with which to mask the image
@@ -273,11 +275,11 @@ where most of the fields are the same as above, except
 
 ## Improvements coming soon
 * fix the line width issue
-* export label images as geotiff
 * support for 4+ band imagery and 1-band imagery
 * compiled executables
 * lookup table for consistent hex colors for common classes
 * config file generator (GUI?)
+* move labelling window to different screen option?
 * CRF "redo"/ optimize function, to search through a range of hyperparameters and find optimal ... needs research
 
 
@@ -287,6 +289,6 @@ where most of the fields are the same as above, except
 - pip install --upgrade 'setuptools<45.0.0'
 - pip install python-opencv-headless
 - pip install pyinstaller
-- pyinstaller --onefile --noconfirm doodler.py --clean --hidden-import pydensecrf.eigen
+- pyinstaller --onefile --noconfirm doodler.py --clean --hidden-import pydensecrf.eigen --hidden-import rasterio._shim --hidden-import rasterio.control --hidden-import pkg_resources.py2_warn
 - conda deactivate
 - ./dist/doodler -->

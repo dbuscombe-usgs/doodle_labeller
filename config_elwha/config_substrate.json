@@ -13,12 +13,13 @@
   "compat_spat": 5,
   "scale": 5,
   "prob": 0.4,
+  "alpha": 0.5,  
   "apply_mask": "None",
   "classes": {
    "sand": "#c0d03b",
    "fine_gravel": "#54c2bc",
    "gravel": "#367e7a",
-   "coarse_gravel": "#1d4543",   
+   "coarse_gravel": "#1d4543",
    "cobble": "#a149ac",
    "other": "#b8596d"
    }

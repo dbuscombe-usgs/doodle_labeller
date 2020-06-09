@@ -7,26 +7,27 @@
   "compat_col": 40,
   "compat_spat": 5,
   "scale": 5,
-  "prob": 0.4,  
+  "prob": 0.4,
+  "alpha": 0.5,
   "outfile": "data/label_images/2017_914_maderia_utm_5000_7500_merged_label.png",
   "out_csv": "data/label_images/2017_914_maderia_utm_5000_7500_merged_label.csv",
-  
+
   "to_merge": {
   "shadow":  "data/label_images/2017_914_maderia_utm_5000_7500_shadow_no_shadow_label.png",
   "substrate": "data/label_images/2017_914_maderia_utm_5000_7500_water_anthro_vegetation_sand_mud_gravel_boulders_snow_ice_wrack_peat_indeterminate_label.png"
    },
-   
-  "classes1": 
+
+  "classes1":
   {
-   "shadow": "#3b81d0",
+   "shadow": "#1b1717",
    "no_shadow": "#e35259"
-  }, 
-  
+  },
+
   "classes2":
   {
    "water": "#3b81d0",
-   "anthro": "#f12063",     
-   "vegetation": "#49ac84",  
+   "anthro": "#f12063",
+   "vegetation": "#49ac84",
    "sand": "#c0d03b",
    "mud": "#62894d",
    "gravel": "#395c27",
@@ -36,5 +37,3 @@
    "indeterminate": "#9e289c"
    }
 }
-
-

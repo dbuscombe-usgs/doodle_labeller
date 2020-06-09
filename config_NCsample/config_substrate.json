@@ -13,6 +13,7 @@
   "compat_spat": 5,
   "scale": 5,
   "prob": 0.4,
+  "alpha": 0.5,  
   "apply_mask": {
   "water":  "data/label_images/2019-0830-195300-DSC04880-N7251F_water_no_water_label.png",
   "veg": "data/label_images/2019-0830-195300-DSC04880-N7251F_vegetation_no_vegetation_label.png",

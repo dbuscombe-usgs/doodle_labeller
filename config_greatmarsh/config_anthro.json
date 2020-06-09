@@ -13,6 +13,7 @@
   "compat_spat": 5,
   "scale": 5,
   "prob": 0.4,
+  "alpha": 0.5,  
   "apply_mask": {
   "water":  "data/label_images/2018_08_20_Greatmarsh_15cm_utm_25000_0_water_no_water_label.png",
   "veg":  "data/label_images/2018_08_20_Greatmarsh_15cm_utm_25000_0_vegetation_no_vegetation_label.png"

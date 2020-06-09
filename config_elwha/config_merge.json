@@ -7,29 +7,28 @@
   "compat_col": 40,
   "compat_spat": 5,
   "scale": 5,
-  "prob": 0.4,  
+  "prob": 0.4,
+  "alpha": 0.5,  
   "outfile": "data/label_images/DSCN3675.JPG_merged_label.png",
-  "out_csv": "data/label_images/DSCN3675.JPG_merged_label.csv",  
+  "out_csv": "data/label_images/DSCN3675.JPG_merged_label.csv",
   "to_merge": {
   "scalebar":  "/media/marda/TWOTB/USGS/DATA/GSPhotos_Examples/labels/DSCN3675_scalebar_no_scalebar_label.png",
   "substrate": "/media/marda/TWOTB/USGS/DATA/GSPhotos_Examples/labels/DSCN3675_sand_fine_gravel_gravel_coarse_gravel_cobble_other_label.png"
    },
-   
-  "classes1": 
+
+  "classes1":
   {
    "scalebar": "#3b81d0",
    "no_scalebar": "#e35259"
   },
-  
+
   "classes2":
    {
    "sand": "#c0d03b",
    "fine_gravel": "#54c2bc",
    "gravel": "#367e7a",
-   "coarse_gravel": "#1d4543",   
+   "coarse_gravel": "#1d4543",
    "cobble": "#a149ac",
    "other": "#b8596d"
    }
 }
-
-
