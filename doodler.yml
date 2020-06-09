@@ -18,4 +18,3 @@ dependencies:
   - rasterio
   - scikit-image
   - joblib
-  - m2-base

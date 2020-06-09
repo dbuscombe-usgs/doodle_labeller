@@ -97,6 +97,12 @@ Use this command to activate the environment, in order to use it
 conda activate doodler
 ```
 
+If you are a Windows user (only) who wishes to use unix style commands, install `m2-base`
+
+```
+conda install m2-base
+```
+
 ### Add pictures
 You will need separate folders for:
 * Where to get the images that you want to label `data/images`. The program will assume you want to label all these images in one go. It's usually best to put one image in there at a time
