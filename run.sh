@@ -1,3 +1,4 @@
+##example full workflow
 python doodler.py -c config_madeira/config_water.json
 python doodler.py -c config_madeira/config_veg.json
 python doodler.py -c config_madeira/config_anthro.json
