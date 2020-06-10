@@ -5,7 +5,6 @@
 #
 # Based on the old "dl-tools" labelling code (https://github.com/dbuscombe-usgs/dl_tools/tree/master/create_groundtruth)
 # > Incorporating some of the code contribution from LCDR Brodie Wells, Naval Postgraduate school Monterey
-# > Sample image provided by Christine Kranenburg , USGS St. Petersburg Coastal and Marine Science Center
 
 import time
 import subprocess, ctypes
@@ -14,7 +13,7 @@ import sys, getopt
 import cv2
 import numpy as np
 from glob import glob
-import rasterio
+import rasterio, tifffile
 
 import pydensecrf.densecrf as dcrf
 from pydensecrf.utils import create_pairwise_bilateral, unary_from_labels
@@ -49,10 +48,10 @@ def PlotAndSave(img, resr, name, config, class_str, profile):
        lab = np.round(255*(resr/len(config['classes'])))
        cv2.imwrite(outfile, lab.astype('uint8')) ##np.max(resr)
 
-       image_path = outfile.replace('.png','.tif')
+       if config['create_gtiff']=='true':
+          image_path = outfile.replace('.png','.tif')
 
-       WriteGeotiff(image_path, lab, profile)
-
+          WriteGeotiff(image_path, lab, profile)
 
        resr = resr.astype('float')
        resr[resr<1] = np.nan
@@ -70,7 +69,13 @@ def PlotAndSave(img, resr, name, config, class_str, profile):
     ax1.get_xaxis().set_visible(False)
     ax1.get_yaxis().set_visible(False)
 
-    _ = ax1.imshow(img)
+    if np.ndim(img)==3:
+       _ = ax1.imshow(img)
+    else:
+       img = img.astype('float')
+       img = np.round(255*(img/img.max()))
+       img[img==0] = np.nan
+       _ = ax1.imshow(img)
 
     im2 = ax1.imshow(resr,
                      cmap=cmap,
@@ -452,7 +457,7 @@ def TimeScreen():
     return start, screen_size
 
 # =========================================================
-def OpenImage(image_path, im_order):
+def OpenImage(image_path, im_order, num_bands):
     """
     Returns the image in numpy array format
     Input:
@@ -461,18 +466,31 @@ def OpenImage(image_path, im_order):
         config : dict
             Dictionary of parameters set in the parameters file
     Output:
-        numpy array of image 2D or 3D #NOTE: want this to do multispectral
+        numpy array of image 2D or 3D or 4+D
     """
-    if image_path.lower()[-3:] == 'tif':
-        img, profile = ReadGeotiff(image_path, im_order)
-    else:
+
+    if (image_path.lower()[-3:] == 'tif') | (image_path.lower()[-4:] == 'tiff'):
+        if num_bands>3:
+           try: #4+ band tif file
+              img = tifffile.imread(image_path)
+              profile = None
+           except: ##<=3 band tif file
+              img = cv2.imread(image_path)
+              if im_order=='RGB':
+                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+              elif im_order=='BGR':
+                 img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+              profile = None
+        else: #3-band geotiff
+           img, profile = ReadGeotiff(image_path, im_order)
+    else: ###<=3 band non-tif file
         img = cv2.imread(image_path)
         if im_order=='RGB':
            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         elif im_order=='BGR':
            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         profile = None
-    return img, profile
+    return np.squeeze(img), profile
 
 
 #===============================================================
@@ -634,15 +652,22 @@ if __name__ == '__main__':
     masks = []
     if config["apply_mask"]!='None':
         for k in config["apply_mask"].keys():
-            tmp, profile = OpenImage(config["apply_mask"][k], None)
+            tmp, profile = OpenImage(config["apply_mask"][k], None, config['num_bands'])
             tmp = (tmp[:,:,0]==0).astype('int')
             masks.append(tmp)
-
 
     for f in files:
 
         start, screen_size = TimeScreen()
-        o_img, profile = OpenImage(f, config['im_order'])
+        o_img, profile = OpenImage(f, config['im_order'], config['num_bands'])
+
+        if np.std(o_img[o_img>0]) < 10:
+           o_img[o_img==0] = np.min(o_img[o_img>0])
+           o_img = o_img-o_img.min()
+           o_img[o_img > (o_img.mean() + 2*o_img.std())] = o_img.mean()
+           o_img = np.round(rescale(o_img,1.,255.)).astype(np.uint8)
+           #o_img[o_img ==0] = o_img.mean()
+           #o_img = np.round(255*(o_img/o_img.max())).astype(np.uint8)
 
         if masks:
             for k in masks:
@@ -656,7 +681,7 @@ if __name__ == '__main__':
         out = out.astype('int')
         nx, ny = np.shape(out)
         gridy, gridx = np.meshgrid(np.arange(ny), np.arange(nx))
-        o_img, profile = OpenImage(f, config['im_order'])
+        o_img, profile = OpenImage(f, config['im_order'], config['num_bands'])
 
         counter = 0
         for ind in Z:
@@ -669,37 +694,66 @@ if __name__ == '__main__':
 
     print("Sparse labelling complete ...")
 
-
+    # cycle through each image root name, stored in N
     for name in N:
         print("Dense labelling ... this may take a while")
+        # get a list of the temporary npz files
         label_files = sorted(glob(config['label_folder']+os.sep+name +'*tmp*'+class_str+'.npz'))
         print("Found %i files" % (len(label_files)))
 
+        # in parallel, get the CRF prediction for each tile
         o = Parallel(n_jobs = -1, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=None)(delayed(DoCrf)(label_files[k], config, name) for k in range(len(label_files)))
 
+        # load the npy file and get the grid coordinates to assign elements of 'o' below
         l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
         l = np.load(l)
         nx, ny = np.shape(l)
         del l
 
+        # allocate an empty label image
         resr = np.zeros((nx, ny))
 
+        # assign the CRF tiles to the label image (resr) using the grid positions
         for k in range(len(o)):
            l = np.load(label_files[k])
            resr[l['grid_x'], l['grid_y']] =o[k]
         del o, l
 
+        # get image file and read it in with the profile of the geotiff, if appropriate
         imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
-        img, profile = OpenImage(imfile, config['im_order'])
+        img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
 
-        resr[np.sum(img,axis=2)==(254*3)] = 0
+        # if 3-band image, mask out pixels that are [254, 254, 254]
+        if np.ndim(img)==3:
+           resr[np.sum(img,axis=2)==(254*3)] = 0
+        elif np.ndim(img)==2: #2-band image
+           resr[img==0] = 0 #zero out image pixels that are 0 and 255
+           resr[img==255] = 0
 
+        # mask out null values in mask files
         if masks:
            for k in masks:
               ##k==1 is the mask
               resr[k==1] = 0 #0=null category
 
+        # plot the result and make label image files
         PlotAndSave(img.copy(), resr, name, config, class_str, profile)
 
+        #remove the temporary npz files
         for f in label_files:
            os.remove(f)
+
+
+#
+# import cv2
+# import numpy as np
+# import tifffile
+#
+# im1 = cv2.imread('data/images/4_rgb.png')
+# im2 = cv2.imread('data/images/4_elev.png')[:,:,0]
+#
+# merged = np.dstack((im1, im2)).astype(np.uint8) # creates a numpy array with 6 channels
+#
+# tifffile.imsave('merged.tiff', merged, planarconfig='contig')
+#
+# im3 = tifffile.imread('merged.tiff')

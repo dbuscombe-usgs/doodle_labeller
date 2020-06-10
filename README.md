@@ -27,7 +27,7 @@ Label images that are outputted by `doodler.py` can be merged using `merge.py`, 
 
 ## Terminology
 
-* image: a 3-band geotiff, or 3-band jpg/jpeg/JPG/JPEG, png/PNG, or tiff/tif/TIF/TIFF
+* image: a 1 or 3-band geotiff, or 1 or 3-band jpg/jpeg/JPG/JPEG, png/PNG, or tiff/tif/TIF/TIFF
 * class: a pre-determined category
 * label: an annotation made on an image attributed to a class (either manually or automatically - in this program, annotations are manual)
 * label image: an image where each pixel has been labeled with a class (either manually or automatically - in this program, the label image is generated automatically using a machine learning algorithm called a CRF)
@@ -275,7 +275,7 @@ where most of the fields are the same as above, except
 
 ## Improvements coming soon
 * fix the line width issue
-* support for 4+ band imagery and 1-band imagery
+* support for 4+ band imagery
 * compiled executables
 * lookup table for consistent hex colors for common classes
 * config file generator (GUI?)

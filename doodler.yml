@@ -14,7 +14,7 @@ dependencies:
   - opencv
   - ipython
   - jupyter
-  - gdal
   - rasterio
   - scikit-image
   - joblib
+  - tifffile
