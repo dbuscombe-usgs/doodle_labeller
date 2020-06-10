@@ -52,6 +52,8 @@ The software can be used to:
 2. label a single image, with pre-masking (mask out imagery with a previously created binary mask), with 2 or more classes
 3. merge multiple label images together, each with with 2 or more classes
 
+The program will read 1- and 3-band imagery in all common file formats supported by [opencv](https://docs.opencv.org/2.4/modules/highgui/doc/reading_and_writing_images_and_video.html). 4+ band imagery must be in formats supported by the [tifffile](https://pypi.org/project/tifffile/) library. Geotiff imagery is read and written using [rasterio](https://rasterio.readthedocs.io/en/latest/)
+
 
 ### Getting set up video
 
@@ -184,8 +186,11 @@ python doodler.py -c config_file.json
 
 ### Draw on the image
 The title of the window is the label that will be associated with the pixels
-you draw on, by holding down the left mouse button. After you are done with label press `escape` (Esc key, usually the top left corner on your keyboard). You can increase and decrease the brush width with `+ / -` keys. You can also undo a mistake with the `z` key.
+you draw on, by holding down the left mouse button.
 
+* After you are done with label press `escape` (Esc key, usually the top left corner on your keyboard).
+* You can increase and decrease the brush width with `+ / -` keys.
+* You can also undo a mistake with the `z` key.
 * Use s to skip forward a square (note that this will not record any labels done on the current square - this feature is for squares with no labels to make)
 * Use b to go back a square
 * Use number keys to switch label
@@ -193,8 +198,7 @@ you draw on, by holding down the left mouse button. After you are done with labe
 If your mouse has a scroll wheel, you can use that to zoom in and out. Other navigation options (zoom, pan, etc) are available with a right mouse click.
 
 ### Dense labeling happens after a manual annotation session
-After you have labeled each image tile for each image, the program will automatically use the CRF algorithm to
-carry out dense (i.e. per-pixel) labelling based on the labels you provided and the underlying image
+After you have labeled each image tile for each image, the program will automatically use the CRF algorithm to carry out dense (i.e. per-pixel) labelling based on the labels you provided and the underlying image
 
 ## Run merge.py
 
@@ -275,7 +279,6 @@ where most of the fields are the same as above, except
 
 ## Improvements coming soon
 * fix the line width issue
-* support for 4+ band imagery
 * compiled executables
 * lookup table for consistent hex colors for common classes
 * config file generator (GUI?)

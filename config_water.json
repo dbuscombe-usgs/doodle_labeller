@@ -18,15 +18,7 @@
   "num_bands": 4,
   "apply_mask": "None",
   "classes": {
-   "anthro": "#f12063",
-   "road_pavement": "7c7878",
-   "sand": "#c0d03b",
-   "mud": "#62894d",
-   "marsh": "#1c6d1d",
-   "gravel": "#395c27",
-   "boulders": "#94925c",
-   "snow_ice": "#f6faf6",
-   "wrack_peat": "#23ad96",
-   "indeterminate": "#9e289c"
+  "water": "#3b81d0",
+  "no_water": "#e35259"
    }
 }
