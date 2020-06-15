@@ -14,8 +14,8 @@
   "scale": 5,
   "prob": 0.5,
   "alpha": 0.5,
-  "create_gtiff": "true",
-  "num_bands": 4,
+  "create_gtiff": "false",
+  "num_bands": 3,
   "apply_mask": "None",
   "classes": {
   "water": "#3b81d0",

@@ -1,3 +1,9 @@
+#  _  _  _    _   ,_    __,  _
+# / |/ |/ |  |/  /  |  /  | |/
+#   |  |  |_/|__/   |_/\_/|/|__/
+#                        /|
+#                        \|
+
 # merge label rasters created using doodler.py
 #
 # > Daniel Buscombe, Marda Science daniel@mardascience.com
@@ -33,12 +39,12 @@ def getCRF(img, Lc, label_lines):
 		config['compat_col']: label compatibilities for the colour-dependent term
 		config['compat_spat']: label compatibilities for the colour-independent term
 		config['scale']: spatial smoothness parameter
-		config['prob']: assumed probability of input labels	
+		config['prob']: assumed probability of input labels
 	Hard-coded variables:
         kernel_bilateral: DIAG_KERNEL kernel precision matrix for the colour-dependent term
             (can take values CONST_KERNEL, DIAG_KERNEL, or FULL_KERNEL).
         normalisation_bilateral: NORMALIZE_SYMMETRIC normalisation for the colour-dependent term
-            (possible values are NO_NORMALIZATION, NORMALIZE_BEFORE, NORMALIZE_AFTER, NORMALIZE_SYMMETRIC).		
+            (possible values are NO_NORMALIZATION, NORMALIZE_BEFORE, NORMALIZE_AFTER, NORMALIZE_SYMMETRIC).
         kernel_gaussian: DIAG_KERNEL kernel precision matrix for the colour-independent
             term (can take values CONST_KERNEL, DIAG_KERNEL, or FULL_KERNEL).
         normalisation_gaussian: NORMALIZE_SYMMETRIC normalisation for the colour-independent term
@@ -50,8 +56,8 @@ def getCRF(img, Lc, label_lines):
     if np.mean(img)<1:
        H = img.shape[0]
        W = img.shape[1]
-       res = np.zeros((H,W)) * np.mean(Lc)	   
-	
+       res = np.zeros((H,W)) * np.mean(Lc)
+
     else:
 
        if np.ndim(img) == 2:
@@ -60,9 +66,9 @@ def getCRF(img, Lc, label_lines):
        W = img.shape[1]
 
        R = []
-    
-       ## loop through the 'theta' values (half, given, and double)	
-       for mult in [1]: #[.5,1,2]: 
+
+       ## loop through the 'theta' values (half, given, and double)
+       for mult in [1]: #[.5,1,2]:
           d = dcrf.DenseCRF2D(H, W, len(label_lines) + 1)
           U = unary_from_labels(Lc.astype('int'),
                           len(label_lines) + 1,
@@ -70,9 +76,14 @@ def getCRF(img, Lc, label_lines):
           d.setUnaryEnergy(U)
 
           # to add the color-independent term, where features are the locations only:
-          d.addPairwiseGaussian(sxy=(int(mult*config['theta_spat']), int(mult*config['theta_spat'])), compat=config['compat_spat'], kernel=dcrf.DIAG_KERNEL, normalization=dcrf.NORMALIZE_SYMMETRIC)
+          d.addPairwiseGaussian(
+                        sxy=(int(mult*config['theta_spat']), int(mult*config['theta_spat'])),
+                        compat=config['compat_spat'],
+                        kernel=dcrf.DIAG_KERNEL,
+                        normalization=dcrf.NORMALIZE_SYMMETRIC)
 
-          feats = create_pairwise_bilateral(sdims=(int(mult*config['theta_col']), int(mult*config['theta_col'])),
+          feats = create_pairwise_bilateral(
+                                      sdims=(int(mult*config['theta_col']), int(mult*config['theta_col'])),
                                       schan=(config['scale'],
                                              config['scale'],
                                              config['scale']),
@@ -83,18 +94,18 @@ def getCRF(img, Lc, label_lines):
                         kernel=dcrf.DIAG_KERNEL,
                         normalization=dcrf.NORMALIZE_SYMMETRIC)
           Q = d.inference(config['n_iter'])
-	
+
           R.append(np.argmax(Q, axis=0).reshape((H, W)))
 
        res = np.round(np.median(R, axis=0))
        del R
 
-    return res 
+    return res
 
 #===============================================================
 def merge_labels(msk, img, classes):
     """
-    Flattens a 3D (RGB) label image into 2D (integer) according to 
+    Flattens a 3D (RGB) label image into 2D (integer) according to
 	hex color codes
     Input:
         msk: 3D ndarray label image
@@ -107,31 +118,31 @@ def merge_labels(msk, img, classes):
     """
     classes_colors = [classes[k] for k in classes.keys() if 'no_' not in k]
     classes_codes = [i for i,k in enumerate(classes) if 'no_' not in k]
-    classes_names = [k for i,k in enumerate(classes) if 'no_' not in k]	
-	
+    classes_names = [k for i,k in enumerate(classes) if 'no_' not in k]
+
     rgb = []
     for c in classes_colors:
        rgb.append(tuple(int(c.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)))
-    	
+
     if len(classes_codes)==1: #binary
        counter = 0
        for k in rgb:
           ind = (img[:,:,0]==classes_codes[counter])
-          msk[ind] = k 
-          counter += 1	 
+          msk[ind] = k
+          counter += 1
     else:
        msk2 = msk.copy()
        tmp = np.round(len(classes)*(img[:,:,0]/255.)).astype('int')-1
-          
+
        counter = 0
        for k in rgb:
           ind = (tmp==classes_codes[counter])
-          msk2[ind] = k 
-          counter += 1	
+          msk2[ind] = k
+          counter += 1
        msk2[msk>0] = msk[msk>0]
        msk=msk2.copy()
        del msk2, tmp
-            
+
     return msk, classes_names, rgb
 
 # =========================================================
@@ -147,7 +158,7 @@ def OpenImage(image_path, im_order):
         numpy array of image 2D or 3D #NOTE: want this to do multispectral
     """
     if image_path.lower()[-3:] == 'tif':
-        img = ReadGeotiff(image_path, im_order) 
+        img = ReadGeotiff(image_path, im_order)
     else:
         img = cv2.imread(image_path)
         if im_order=='RGB':
@@ -312,33 +323,33 @@ if __name__ == '__main__':
             configfile = arg
 
     #configfile = 'config_merge.json'
-	
+
     # load the user configs
     with open(os.getcwd()+os.sep+configfile) as f:
         config = json.load(f)
-		
-    ## list of label images to combine
-    to_merge = [config['to_merge'][k] for k in config['to_merge'].keys()]	
 
-    ##list of associated class sets 
-    class_sets = [c for c in config.keys() if c.startswith('class')]	
+    ## list of label images to combine
+    to_merge = [config['to_merge'][k] for k in config['to_merge'].keys()]
+
+    ##list of associated class sets
+    class_sets = [c for c in config.keys() if c.startswith('class')]
 
     ## get first mask in list
     img = cv2.imread(to_merge[0])
-	
+
     ## allocate empty array of same dimensions
     msk = np.zeros((img.shape), dtype=np.uint8)
-	
+
     ##allocate empty dictionary for classes and rgb colors
     class_dict = {}
-		
+
     ## get rgb label for first label image
     msk, classes_names, rgb = merge_labels(msk, cv2.imread(to_merge[0]), config[class_sets[0]])
-	
-    ##update dictionary	
+
+    ##update dictionary
     for c,r in zip(classes_names, rgb):
-       class_dict[c] = r    
-    
+       class_dict[c] = r
+
     ## do same for rest of class sets
     for ii,cc in zip(to_merge[1:], class_sets[1:]):
        msk, classes_names, rgb = merge_labels(msk, cv2.imread(ii), config[cc])
@@ -357,116 +368,103 @@ if __name__ == '__main__':
 
     ##get rgb colors
     cols = [class_dict[c] for c in class_dict.keys()]
-    ## flatten 3d label image to 2d	
+    ## flatten 3d label image to 2d
     msk_flat = flatten_labels(msk, cols )
 
     ## get image files list
     files = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*.*')))
-    ##get image names	
+    ##get image names
     names = [f.split(os.sep)[-1].split('.')[0] for f in files]
-    ## the file to use 	
+    ## the file to use
     imfile = [n for n in names if config['outfile'].split('/')[-1].startswith(n)][0]
     ##the file to use with full path
     to_use = [f for f in files if imfile in f][0]
-	
-    ##read image	
+
+    ##read image
     img = OpenImage(to_use, config['im_order'])
 
     ## get CRF label refinement
     print("Dense labelling ... this may take a while")
-	
-    ##50% overlap between tiles
-    overlap = .5
+
+    ##50% overlap between tiles = .5, no overlap = 1.
+    overlap = 1. #.5
     nx, ny, nz = np.shape(img)
-    ##number of chunks in each dimension	
+    ##number of chunks in each dimension
     num_chunks = gcd(nx, ny)
-    
+
     if (num_chunks==nx) | (num_chunks==ny):
        ## do this without windowing/overlap
-       res = getCRF(img, msk_flat+1, class_dict)     
-    
-    elif num_chunks>100: 
+       res = getCRF(img, msk_flat+1, class_dict)
 
-       res = getCRF(img, msk_flat+1, class_dict)         
-       
+    elif num_chunks>100:
+
+       res = getCRF(img, msk_flat+1, class_dict)
+
     else:
-       print("working on %i chunks" % (int(num_chunks)))    
+       print("working on %i chunks" % (int(num_chunks)))
        ##size of each chunk
        sx = int(nx/num_chunks)
        sy = int(ny/num_chunks)
        ssx = int(overlap*sx)
        ssy = int(overlap*sy)
-	
-       ##gets small overlapped image windows	
+
+       ##gets small overlapped image windows
        Z, indZ = sliding_window(img, (sx, sy, nz), (ssx, ssy, nz))
        del img
-       ##gets small overlapped label windows	
+       ##gets small overlapped label windows
        L, indL = sliding_window(msk_flat, (sx, sy), (ssx, ssy))
-       del msk_flat	
+       del msk_flat
 
        print("%i chunks" % (len(Z)))
 
-       ## process each small image chunk in parallel 
-       o = Parallel(n_jobs = -1, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=None)(delayed(getCRF)(Z[k], L[k], class_dict) for k in range(len(Z)))
+       ## process each small image chunk in parallel
+       o = Parallel(n_jobs = -1, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=None)\
+                   (delayed(getCRF)(Z[k], L[k], class_dict) for k in range(len(Z)))
 
        ## get grids to deal with overlapping values
        gridy, gridx = np.meshgrid(np.arange(ny), np.arange(nx))
        ## get sliding windows
        Zx,_ = sliding_window(gridx, (sx, sy), (ssx, ssy))
        Zy,_ = sliding_window(gridy, (sx, sy), (ssx, ssy))
-	
+
        ## get two grids, one for division and one for accumulation
-       av = np.zeros((nx, ny))	
-       out = np.zeros((nx, ny))	
+       av = np.zeros((nx, ny))
+       out = np.zeros((nx, ny))
        for k in range(len(o)):
           av[Zx[k], Zy[k]] += 1
           out[Zx[k], Zy[k]] += o[k]
 
        ## delete what we no longer need
        del Zx, Zy, o
-       ## make the grids by taking an average, plus one, and floor	
-       res = np.floor(1+(out/av)) 
+       ## make the grids by taking an average, plus one, and floor
+       res = np.floor(1+(out/av))
        del out, av
 
     ## median filter to remove remaining high-freq spatial noise (radius of N pixels)
     N = np.round(11*(ny/7362)).astype('int') #11 when ny=7362
-    
+
     res = median(res.astype(np.uint8), disk(N))
-    
-    ## replace zeros with most populous value	
-    ##res[res==0] = np.argmax(np.bincount(res.flatten()))	
-	
+
+    ## replace zeros with most populous value
+    ##res[res==0] = np.argmax(np.bincount(res.flatten()))
+
     ## write out the refined flattened label image
     print("Writing our 2D label image to %s" % (config['outfile'].replace('.png', '_flat.png')))
-    cv2.imwrite(config['outfile'].replace('.png', '_flat.png'), 
-	            np.round(255*(res/len(class_dict) )).astype('uint8')) ##  
-		
+    cv2.imwrite(config['outfile'].replace('.png', '_flat.png'),
+	            np.round(255*(res/len(class_dict) )).astype('uint8')) ##
+
     ## allocate empty 3D array of same x-y dimensions
     msk = np.zeros((res.shape)+(3,), dtype=np.uint8)
-    
-    ##do the rgb allocation	
+
+    ##do the rgb allocation
     for k in np.unique(res):
        ind = (res==k)
        msk[ind] = cols[k-1]
     del res
-    
+
     ##mask out null portions of image
-    msk[np.sum(img,axis=2)==(254*3)] = 0  
-        
+    msk[np.sum(img,axis=2)==(254*3)] = 0
+
     ## write out smoothed rgb image
     print("Writing our RGB image to %s" % (config['outfile'].replace('.png', '_crf.png')))
     cv2.imwrite(config['outfile'].replace('.png', '_crf.png'), cv2.cvtColor(msk, cv2.COLOR_RGB2BGR) )
-
-
-
-
-
-
-
-
-
-
-
-
-
-

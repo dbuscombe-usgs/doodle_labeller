@@ -1,3 +1,9 @@
+#    |               |  | |
+#  __|   __   __   __|  | |  _   ,_
+# /  |  /  \_/  \_/  |  |/  |/  /  |
+# \_/|_/\__/ \__/ \_/|_/|__/|__/   |_/
+#
+
 # "Doodle Labeller"
 #
 # > Daniel Buscombe, Marda Science daniel@mardascience.com
@@ -297,12 +303,13 @@ class MaskPainter():
 
     def LabelWindow(self):
         print("Initial brush width = 5")
-        print("  -change using the +/- keys")
-        print("Cycle classes with [ESC]")
+        print("  decrease using the [1] key")
+        print("  increase using the [2] key")
+        print("Cycle classes with [ESC] key")
         #print("Subtract mean with [Space]")
-        print("Go back a frame with [b]")
-        print("Skip a frame with [s]")
-        print("\nTo navigate labels use:\nButton: Label")
+        print("Go back a frame with [b] key")
+        print("Skip a frame with [s] key")
+        #print("\nTo navigate labels use:\nButton: Label")
 
         nav_b = "123456789qwerty"
         for labl, button in enumerate(self.config['classes'].keys()):
@@ -390,12 +397,12 @@ class MaskPainter():
                             counter += 1
                             break
 
-                        if chr(k) in nav_b:  # if label number pressd, go to it
-                            nav = True
-                            lab = True
-                            ck -= 1
-                            counter = nav_b.find(chr(k)) + 1
-                            break
+                        # if chr(k) in nav_b:  # if label number pressd, go to it
+                        #     nav = True
+                        #     lab = True
+                        #     ck -= 1
+                        #     counter = nav_b.find(chr(k)) + 1
+                        #     break
 
                         if k == ord("s"):  # If s is pressed, skip square
                             nav = True
@@ -406,11 +413,11 @@ class MaskPainter():
                             ck -= 2
                             break
 
-                        if k == ord('-'):  # If + is pressed, increase brush wi
+                        if k == ord('2'):  # If 2 is pressed, increase brush wi
                             self.size += 1
                             print("brush width = " + str(self.size))
 
-                        if k == ord('-'):  # If - is pressed, decrese brush wid
+                        if k == ord('1'):  # If 1 is pressed, decrese brush wid
                             self.size -= 1
                             if self.size < 1:
                                 self.size = 1
@@ -565,7 +572,7 @@ def WriteGeotiff(image_path, lab, profile):
           compress='lzw')
 
        with rasterio.open(image_path, 'w', **profile) as dst:
-          dst.write(lab.astype(rasterio.uint8), 1)
+          dst.write(lab.astype(rasterio.uint8), 1) #1=1 band
 
 
 #===============================================================
@@ -651,10 +658,15 @@ if __name__ == '__main__':
     # masks are binary labels where the null class is zero
     masks = []
     if config["apply_mask"]!='None':
-        for k in config["apply_mask"].keys():
-            tmp, profile = OpenImage(config["apply_mask"][k], None, config['num_bands'])
-            tmp = (tmp[:,:,0]==0).astype('int')
-            masks.append(tmp)
+        try: #multiple masks first
+           for k in config["apply_mask"].keys():
+              tmp, profile = OpenImage(config["apply_mask"][k], None, config['num_bands'])
+              tmp = (tmp[:,:,0]==0).astype('int')
+              masks.append(tmp)
+        except:
+              tmp, profile = OpenImage(config["apply_mask"], None, config['num_bands'])
+              tmp = (tmp[:,:,0]==0).astype('int')
+              masks.append(tmp)
 
     for f in files:
 
@@ -685,7 +697,11 @@ if __name__ == '__main__':
 
         counter = 0
         for ind in Z:
-           np.savez(config['label_folder']+os.sep+name+"_tmp"+str(counter)+"_"+class_str+".npz", label=out[ind[0]:ind[1], ind[2]:ind[3]], image=o_img[ind[0]:ind[1], ind[2]:ind[3]], grid_x=gridx[ind[0]:ind[1], ind[2]:ind[3]], grid_y=gridy[ind[0]:ind[1], ind[2]:ind[3]])
+           np.savez(config['label_folder']+os.sep+name+"_tmp"+str(counter)+"_"+class_str+".npz",
+                    label=out[ind[0]:ind[1], ind[2]:ind[3]],
+                    image=o_img[ind[0]:ind[1], ind[2]:ind[3]],
+                    grid_x=gridx[ind[0]:ind[1], ind[2]:ind[3]],
+                    grid_y=gridy[ind[0]:ind[1], ind[2]:ind[3]])
            counter += 1
 
         outfile = config['label_folder']+os.sep+name+"_"+class_str+".npy"
@@ -693,16 +709,26 @@ if __name__ == '__main__':
         print("annotations saved to %s" % (outfile))
 
     print("Sparse labelling complete ...")
+    print("Dense labelling ... this may take a while")
 
     # cycle through each image root name, stored in N
     for name in N:
-        print("Dense labelling ... this may take a while")
         # get a list of the temporary npz files
         label_files = sorted(glob(config['label_folder']+os.sep+name +'*tmp*'+class_str+'.npz'))
         print("Found %i files" % (len(label_files)))
 
-        # in parallel, get the CRF prediction for each tile
-        o = Parallel(n_jobs = -1, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=None)(delayed(DoCrf)(label_files[k], config, name) for k in range(len(label_files)))
+        try:
+           # in parallel, get the CRF prediction for each tile
+           o = Parallel(n_jobs = -1, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=None)\
+                       (delayed(DoCrf)(label_files[k], config, name) for k in range(len(label_files)))
+        except:
+           print("Something went wrong with parallel - trying 2 cores ...")
+           o = Parallel(n_jobs = 2, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=None)\
+                       (delayed(DoCrf)(label_files[k], config, name) for k in range(len(label_files)))
+        finally:
+           print("Something went really wrong with parallel - trying 1 core ...")
+           o = Parallel(n_jobs = 1, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=None)\
+                       (delayed(DoCrf)(label_files[k], config, name) for k in range(len(label_files)))
 
         # load the npy file and get the grid coordinates to assign elements of 'o' below
         l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]

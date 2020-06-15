@@ -54,6 +54,11 @@ The software can be used to:
 
 The program will read 1- and 3-band imagery in all common file formats supported by [opencv](https://docs.opencv.org/2.4/modules/highgui/doc/reading_and_writing_images_and_video.html). 4+ band imagery must be in formats supported by the [tifffile](https://pypi.org/project/tifffile/) library. Geotiff imagery is read and written using [rasterio](https://rasterio.readthedocs.io/en/latest/)
 
+### Known issues
+
+This software is undergoing development and is subject to frequent change. In particular, 1d and 4d imagery has not been extensively tested so please expect bugs. Proper documentation is forthcoming.
+
+I know the brush thickness buttons doesn't change on the present tile - we are working on a fix
 
 ### Getting set up video
 

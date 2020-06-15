@@ -16,7 +16,7 @@
   "alpha": 0.5,
   "create_gtiff": "true",
   "num_bands": 4,
-  "apply_mask": "None",
+  "apply_mask": "/home/marda/DAN_USGS/doodle_labeller/data/label_images/2019-0830-195300-DSC04880-N7251F_water_no_water_label_optim.png",
   "classes": {
    "anthro": "#f12063",
    "road_pavement": "7c7878",
