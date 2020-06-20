@@ -4,28 +4,17 @@
   "max_x_steps": 4,
   "max_y_steps": 4,
   "ref_im_scale": 0.8,
-  "lw": 5,
+  "lw": 15,
   "im_order": "RGB",
-  "theta_col": 40,
-  "theta_spat": 5,
-  "n_iter": 10,
-  "compat_col": 40,
-  "compat_spat": 5,
-  "scale": 5,
-  "prob": 0.4,
-  "alpha": 0.5,  
-  "apply_mask": {
-  "water":  "data/label_images/2019-0830-195300-DSC04880-N7251F_water_no_water_label.png",
-  "veg": "data/label_images/2019-0830-195300-DSC04880-N7251F_vegetation_no_vegetation_label.png",
-  "anthro": "data/label_images/2019-0830-195300-DSC04880-N7251F_anthro_no_anthro_label.png"
-   },
+  "alpha": 0.5,
+  "num_bands": 3,
+  "create_gtiff": "false",
+  "apply_mask": ["water", "veg"],
   "classes": {
    "sand": "#c0d03b",
-   "mud": "#62894d",
-   "gravel": "#395c27",
-   "boulders": "#94925c",
-   "snow_ice": "#888c8c",
-   "wrack_peat": "#23ad96",
-   "indeterminate": "#9e289c"
+   "roads": "#696669",
+   "buildings": "#de3e5d",
+   "people": "#74346b",
+   "cars": "#dd9c1a"
    }
 }

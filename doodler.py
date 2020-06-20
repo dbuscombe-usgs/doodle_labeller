@@ -12,7 +12,6 @@
 # Based on the old "dl-tools" labelling code (https://github.com/dbuscombe-usgs/dl_tools/tree/master/create_groundtruth)
 # > Incorporating some of the code contribution from LCDR Brodie Wells, Naval Postgraduate school Monterey
 
-import time
 import subprocess, ctypes
 import os, json
 import sys, getopt
@@ -27,78 +26,9 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from joblib import Parallel, delayed
-
-# =========================================================
-def PlotAndSave(img, resr, name, config, class_str, profile):
-    """
-    Makes plots and save label images
-    Input:
-        img:
-		resr:
-		name:
-		config:
-		class_str:
-        profile: rasterio file profile (CRS, etc)
-    Output:
-        None
-    """
-    outfile = config['label_folder']+os.sep+name+"_"+class_str+'_label.png'
-
-    if len(config['classes'])==2:
-       resr[resr==0] = 2 #2 is null class
-       resr = resr-1
-       cv2.imwrite(outfile,
-                np.round(255*((resr)/np.max(resr))).astype('uint8'))
-
-    else:
-       lab = np.round(255*(resr/len(config['classes'])))
-       cv2.imwrite(outfile, lab.astype('uint8')) ##np.max(resr)
-
-       if config['create_gtiff']=='true':
-          image_path = outfile.replace('.png','.tif')
-
-          WriteGeotiff(image_path, lab, profile)
-
-       resr = resr.astype('float')
-       resr[resr<1] = np.nan
-       resr = resr-1
-
-    try:
-       alpha_percent = config['alpha'] #0.75
-    except:
-       alpha_percent = 0.5
-
-    cmap = colors.ListedColormap(list(config['classes'].values()))
-
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111) #sp + 1)
-    ax1.get_xaxis().set_visible(False)
-    ax1.get_yaxis().set_visible(False)
-
-    if np.ndim(img)==3:
-       _ = ax1.imshow(img)
-    else:
-       img = img.astype('float')
-       img = np.round(255*(img/img.max()))
-       img[img==0] = np.nan
-       _ = ax1.imshow(img)
-
-    im2 = ax1.imshow(resr,
-                     cmap=cmap,
-                     alpha=alpha_percent, interpolation='nearest',
-                     vmin=0, vmax=len(config['classes']))
-    divider = make_axes_locatable(ax1)
-    cax = divider.append_axes("right", size="5%")
-    cb=plt.colorbar(im2, cax=cax)
-    cb.set_ticks(0.5 + np.arange(len(config['classes']) + 1))
-    cb.ax.set_yticklabels(config['classes'], fontsize=6)
-
-    outfile = config['label_folder']+os.sep+name+"_"+class_str+'_mres.png'
-
-    plt.savefig(outfile,
-                dpi=300, bbox_inches = 'tight')
-    del fig; plt.close()
-
+from PIL import Image
+from skimage.filters.rank import median
+from skimage.morphology import disk, erosion
 
 # =========================================================
 def DoCrf(file, config, name):
@@ -113,9 +43,14 @@ def DoCrf(file, config, name):
     """
     data = np.load(file)
 
+    #img = data['image']
+    #Lc = data['label']
+    #num_classes = len(config['classes'])
+    #fact = config['fact']
+
     res = getCRF(data['image'],
                             data['label'],
-                            config['classes'])
+                            config['classes'], config['fact'])
 
     if np.all(res)==254:
        res *= 0
@@ -123,21 +58,13 @@ def DoCrf(file, config, name):
     return res
 
 # =========================================================
-def getCRF(img, Lc, label_lines):
+def getCRF(img, Lc, label_lines, fact):
     """
     Uses a dense CRF model to refine labels based on sparse labels and underlying image
     Input:
         img: 3D ndarray image
 		Lc: 2D ndarray label image (sparse or dense)
 		label_lines: list of class names
-	Global parameters used:
-		config['n_iter']: number of iterations of MAP inference.
-		config['theta_col']: standard deviations for the location component of the colour-dependent term.
-		config['theta_spat']: standard deviations for the location component of the colour-independent term.
-		config['compat_col']: label compatibilities for the colour-dependent term
-		config['compat_spat']: label compatibilities for the colour-independent term
-		config['scale']: spatial smoothness parameter
-		config['prob']: assumed probability of input labels
 	Hard-coded variables:
         kernel_bilateral: DIAG_KERNEL kernel precision matrix for the colour-dependent term
             (can take values CONST_KERNEL, DIAG_KERNEL, or FULL_KERNEL).
@@ -151,6 +78,18 @@ def getCRF(img, Lc, label_lines):
         res : CRF-refined 2D label image
     """
 
+    # initial parameters
+    n_iter = 10
+    scale = 1+(10 * (np.array(img.shape).max() / 3681))
+
+    compat_col = config['compat_col'] #20
+    theta_col = config['theta_col'] #20
+    theta_spat = 3
+    prob = 0.9
+    compat_spat = 3
+
+    search = [.25,.5,1,2,4]
+
     if np.mean(img)<1:
        H = img.shape[0]
        W = img.shape[1]
@@ -158,58 +97,93 @@ def getCRF(img, Lc, label_lines):
 
     else:
 
+       # if image is 2D, make it 3D by stacking bands
        if np.ndim(img) == 2:
+          # decimate by factor first
+          img = img[::fact,::fact, :]
           img = np.dstack((img, img, img))
+
+       # get original image shapes
+       Horig = img.shape[0]
+       Worig = img.shape[1]
+
+       # decimate by factor by taking only every other row and column
+       img = img[::fact,::fact, :]
+       # do the same for the label image
+       Lc = Lc[::fact,::fact]
+
+       # get the new shapes
        H = img.shape[0]
        W = img.shape[1]
+
+       U = unary_from_labels(Lc.astype('int'),
+                          len(label_lines) + 1,
+                          gt_prob=prob)
 
        R = []
 
        ## loop through the 'theta' values (half, given, and double)
-       for mult in [.5,1,2]:
+       for mult in search:
           d = dcrf.DenseCRF2D(H, W, len(label_lines) + 1)
-          U = unary_from_labels(Lc.astype('int'),
-                          len(label_lines) + 1,
-                          gt_prob=config['prob'])
           d.setUnaryEnergy(U)
 
           # to add the color-independent term, where features are the locations only:
-          d.addPairwiseGaussian(sxy=(int(mult*config['theta_spat']), int(mult*config['theta_spat'])), compat=config['compat_spat'], kernel=dcrf.DIAG_KERNEL, normalization=dcrf.NORMALIZE_SYMMETRIC)
+          d.addPairwiseGaussian(
+                         sxy=(theta_spat, theta_spat),
+                         compat=compat_spat,
+                         kernel=dcrf.DIAG_KERNEL,
+                         normalization=dcrf.NORMALIZE_SYMMETRIC)
 
-          feats = create_pairwise_bilateral(sdims=(int(mult*config['theta_col']), int(mult*config['theta_col'])),
-                                      schan=(config['scale'],
-                                             config['scale'],
-                                             config['scale']),
+          feats = create_pairwise_bilateral(
+                                      sdims=(theta_col*mult, theta_col*mult),
+                                      schan=(scale,
+                                             scale,
+                                             scale),
                                       img=img,
                                       chdim=2)
 
-          d.addPairwiseEnergy(feats, compat=config['compat_col'],
+          d.addPairwiseEnergy(feats, compat=compat_col,
                         kernel=dcrf.DIAG_KERNEL,
                         normalization=dcrf.NORMALIZE_SYMMETRIC)
-          Q = d.inference(config['n_iter'])
-
+          Q = d.inference(n_iter)
+          #print("KL-divergence at {}: {}".format(i, d.klDivergence(Q)))
           R.append(1+np.argmax(Q, axis=0).reshape((H, W)))
+          del Q
 
        res = np.round(np.median(R, axis=0))
        del R
 
-    return res #, preds
+       if fact>1:
+          res = np.array(Image.fromarray(res.astype(np.uint8)).resize((Worig, Horig), resample=1))
+
+       ## median filter to remove remaining high-freq spatial noise (radius of N pixels)
+       N = np.round(11*(Worig/(3681))).astype('int') #11 when ny=3681
+       #print("median filter size: %i" % (N))
+
+       res = median(res.astype(np.uint8), disk(N))
+
+       if len(label_lines)==2:
+           res = erosion(res, disk(N))
+
+    return res
+
+
+
 
 # =========================================================
 class MaskPainter():
-    def __init__(self, image, config, screen_size): #, im_mean):
+    def __init__(self, image, config, screen_size):
 
         if config['im_order']=='RGB':
-            self.image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) #image
+            self.image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         elif config['im_order']=='BGR':
-            self.image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR) #image
+            self.image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
         self.config = config
         self.screen_size = screen_size
-        #self.im_mean = im_mean
         self.class_mask = np.zeros((self.image.shape[0],
                                    self.image.shape[1],
-                                   int(len(self.config['classes']) + 1)))
+                                   int(len(self.config['classes']) + 1)), dtype=np.uint8)
         self.mask_copy = self.class_mask.copy()
         self.size = self.config['lw']
         self.current_x = 0
@@ -223,10 +197,10 @@ class MaskPainter():
         rw = float(width) / float(w)
         rf = min(rh, rw) * self.config['ref_im_scale']
         dim = (int(w * rf), int(h * rf))
-        print("screen size =", self.screen_size)
-        print("im_shape =", imshape)
-        print("min(rh, rw) =", min(rh, rw))
-        print("dim =", dim)
+        #print("screen size =", self.screen_size)
+        #print("im_shape =", imshape)
+        #print("min(rh, rw) =", min(rh, rw))
+        #print("dim =", dim)
         return dim
 
     def MakeWindows(self):
@@ -302,19 +276,13 @@ class MaskPainter():
             return src
 
     def LabelWindow(self):
-        print("Initial brush width = 5")
+        print("Initial brush width = %i" % (config['lw']))
         print("  decrease using the [1] key")
         print("  increase using the [2] key")
         print("Cycle classes with [ESC] key")
-        #print("Subtract mean with [Space]")
         print("Go back a frame with [b] key")
         print("Skip a frame with [s] key")
-        #print("\nTo navigate labels use:\nButton: Label")
 
-        nav_b = "123456789qwerty"
-        for labl, button in enumerate(self.config['classes'].keys()):
-            print(button + ':', nav_b[labl])
-        nav_b = nav_b[:len(self.config['classes'])]
         self.draw = False  # True if mouse is pressed
         self.Z = self.MakeWindows()
         lab = False
@@ -343,13 +311,12 @@ class MaskPainter():
             if not lab:
                 counter = 1   # Label number
             sm = 0        # Enhancement variable
-            if 2 > 1: #np.std(self.im_sect) > 0:
+            if 2 > 1:
                 s = np.shape(self.im_sect[:, :, 2])
                 if not lab:
                     # TODO: Lc should never be set to zeros!!
                     #      It needs to get from class mask, so that it can
                     #      keep the labels that have been done
-                    #      Need to figure out what that means for lab and nav
                     Lc = np.zeros((s[0], s[1],
                                    len(self.config['classes']) + 1))
                 else:
@@ -397,13 +364,6 @@ class MaskPainter():
                             counter += 1
                             break
 
-                        # if chr(k) in nav_b:  # if label number pressd, go to it
-                        #     nav = True
-                        #     lab = True
-                        #     ck -= 1
-                        #     counter = nav_b.find(chr(k)) + 1
-                        #     break
-
                         if k == ord("s"):  # If s is pressed, skip square
                             nav = True
                             break
@@ -434,20 +394,19 @@ class MaskPainter():
             ck += 1
         return np.argmax(self.class_mask, axis=2), self.Z
 
+
 # =========================================================
-def TimeScreen():
+def Screen():
     """
-    Starts a timer and gets the screen size.
+    gets the screen size.
     Input:
         nothing
     Output:
-        start : datetime stamp
         screen_size : tuple of screen size
     """
 
-    # start timer and get screen size
+    # get screen size
     if os.name == 'posix':  # true if linux/mac or cygwin on windows
-        start = time.time()
         cmd = ['xrandr']
         cmd2 = ['grep', '*']
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
@@ -458,10 +417,10 @@ def TimeScreen():
         width, height = resolution.split('x')
         screen_size = tuple((int(height), int(width)))
     else:  # windows
-        start = time.clock()
         user32 = ctypes.windll.user32
         screen_size = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
-    return start, screen_size
+    return screen_size
+
 
 # =========================================================
 def OpenImage(image_path, im_order, num_bands):
@@ -607,7 +566,6 @@ def ReadGeotiff(image_path, rgb):
             img = np.dstack([r, g, b])
         else:
             img = np.dstack([b, g, r])
-    # TODO: I have not tested any of the rest of this project for one layer
     else:
         img = layer
 
@@ -618,6 +576,85 @@ def ReadGeotiff(image_path, rgb):
     img[img[:,:,2] == 255] = 254
 
     return img, profile
+
+
+# =========================================================
+def PlotAndSave(img, resr, name, config, class_str, profile):
+    """
+    Makes plots and save label images
+    Input:
+        img:
+		resr:
+		name:
+		config:
+		class_str:
+        profile: rasterio file profile (CRS, etc)
+    Output:
+        None
+    """
+    outfile = config['label_folder']+os.sep+name+"_"+class_str+'_label.png'
+
+    if len(config['classes'])==2:
+       resr[resr==0] = 2 #2 is null class
+       resr = resr-1
+       cv2.imwrite(outfile,
+                np.round(255*((resr)/np.max(resr))).astype('uint8'))
+
+    else:
+       lab = np.round(255*(resr/len(config['classes'])))
+       cv2.imwrite(outfile, lab.astype('uint8')) ##np.max(resr)
+
+       if config['create_gtiff']=='true':
+          image_path = outfile.replace('.png','.tif')
+
+          WriteGeotiff(image_path, lab, profile)
+
+       resr = resr.astype('float')
+       resr[resr<1] = np.nan
+       resr = resr-1
+
+    try:
+       alpha_percent = config['alpha'] #0.75
+    except:
+       alpha_percent = 0.5
+
+    cols = list(config['classes'].values())
+    new_cols = []
+    for col in cols:
+        if not col.startswith('#'):
+            col = '#'+col
+        new_cols.append(col)
+    cmap = colors.ListedColormap(new_cols)
+
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111) #sp + 1)
+    ax1.get_xaxis().set_visible(False)
+    ax1.get_yaxis().set_visible(False)
+
+    if np.ndim(img)==3:
+       _ = ax1.imshow(img)
+    else:
+       img = img.astype('float')
+       img = np.round(255*(img/img.max()))
+       img[img==0] = np.nan
+       _ = ax1.imshow(img)
+
+    im2 = ax1.imshow(resr,
+                     cmap=cmap,
+                     alpha=alpha_percent, interpolation='nearest',
+                     vmin=0, vmax=len(config['classes']))
+    divider = make_axes_locatable(ax1)
+    cax = divider.append_axes("right", size="5%")
+    cb=plt.colorbar(im2, cax=cax)
+    cb.set_ticks(0.5 + np.arange(len(config['classes']) + 1))
+    cb.ax.set_yticklabels(config['classes'], fontsize=6)
+
+    outfile = config['label_folder']+os.sep+name+"_"+class_str+'_mres.png'
+
+    plt.savefig(outfile,
+                dpi=300, bbox_inches = 'tight')
+    del fig; plt.close()
+
 
 
 #===============================================================
@@ -644,8 +681,28 @@ if __name__ == '__main__':
     # for k in config.keys():
     #     exec(k+'=config["'+k+'"]')
 
+    ## add defaults for missing items
+    if "num_bands" not in config:
+       config['num_bands'] = 3
+    if "create_gtiff" not in config:
+       config['create_gtiff'] = False
+    if "alpha" not in config:
+       config['alpha'] = 0.5
+    if "apply_mask" not in config:
+       config['apply_mask'] = None
+    if "fact" not in config:
+       config['fact'] = 5
+    if "compat_col" not in config:
+       config['compat_col'] = 20
+    if "theta_col" not in config:
+       config['theta_col'] = 20
+
+
+    #the program needs two classes
     if len(config['classes'])==1:
-       print("You must have a minimum of 2 classes, i.e. 1) object of interest and 2) background")
+       print(
+       "You must have a minimum of 2 classes, i.e. 1) object of interest and 2) background ... program exiting"
+       )
        sys.exist(2)
 
     class_str = '_'.join(config['classes'].keys())
@@ -653,24 +710,51 @@ if __name__ == '__main__':
     files = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*.*')))
 
     N = []
-    #N.append(files[0].split(os.sep)[-1].split('.')[0])
+    #for f in files:
+    #    N.append(os.path.splitext(f)[0].split(os.sep)[-1])
 
     # masks are binary labels where the null class is zero
     masks = []
+    mask_names = []
     if config["apply_mask"]!='None':
-        try: #multiple masks first
-           for k in config["apply_mask"].keys():
-              tmp, profile = OpenImage(config["apply_mask"][k], None, config['num_bands'])
-              tmp = (tmp[:,:,0]==0).astype('int')
-              masks.append(tmp)
-        except:
-              tmp, profile = OpenImage(config["apply_mask"], None, config['num_bands'])
-              tmp = (tmp[:,:,0]==0).astype('int')
-              masks.append(tmp)
+       if type(config["apply_mask"]) is str:
+          to_search = glob(config['label_folder']+os.sep+'*'+config["apply_mask"]+'*label.png')
+          for f in to_search:
+             tmp, profile = OpenImage(f, None, config['num_bands'])
+             tmp = (tmp[:,:,0]==0).astype('uint8')
+             masks.append(tmp)
+             mask_names.append(f)
+             del tmp
+       elif type(config["apply_mask"]) is list:
+          for k in config["apply_mask"]:
+             to_search = glob(config['label_folder']+os.sep+'*'+k+'*label.png')
+             
+             for f in to_search:
+                tmp, profile = OpenImage(f, None, config['num_bands'])
+                if len(np.unique(tmp))==2:
+                   tmp = (tmp[:,:,0]==0).astype('uint8')
+                else:
+                   #assumes the 'null' or masking class is all but the last
+                   tmp = (tmp[:,:,0]!=np.max(tmp[:,:,0])).astype('uint8')
+                masks.append(tmp)
+                mask_names.append(f)
+                del tmp
 
+    # if config["apply_mask"]!='None':
+    #     try: #multiple masks first
+    #        for k in config["apply_mask"].keys():
+    #           tmp, profile = OpenImage(config["apply_mask"][k], None, config['num_bands'])
+    #           tmp = (tmp[:,:,0]==0).astype('int')
+    #           masks.append(tmp)
+    #     except:
+    #           tmp, profile = OpenImage(config["apply_mask"], None, config['num_bands'])
+    #           tmp = (tmp[:,:,0]==0).astype('int')
+    #           masks.append(tmp)
+
+    ##cycle through each file in turn
     for f in files:
 
-        start, screen_size = TimeScreen()
+        screen_size = Screen()
         o_img, profile = OpenImage(f, config['im_order'], config['num_bands'])
 
         if np.std(o_img[o_img>0]) < 10:
@@ -678,22 +762,31 @@ if __name__ == '__main__':
            o_img = o_img-o_img.min()
            o_img[o_img > (o_img.mean() + 2*o_img.std())] = o_img.mean()
            o_img = np.round(rescale(o_img,1.,255.)).astype(np.uint8)
-           #o_img[o_img ==0] = o_img.mean()
-           #o_img = np.round(255*(o_img/o_img.max())).astype(np.uint8)
+
+        #if masks:
+        #    for k in masks:
+        #        o_img[k==1] = 255
 
         if masks:
-            for k in masks:
-                o_img[k==1] = 255
+            use = [m for m in mask_names if \
+                   m.startswith(os.path.splitext(f)[0].replace('images', 'label_images'))]
+                   
+            for u in use:
+               ind = [i for i in range(len(mask_names)) if mask_names[i]==u][0]
+               o_img[masks[ind]==1] = 255
 
-        name = f.split(os.sep)[-1].split('.')[0] #assume no dots in file name
+
+        ##name = f.split(os.sep)[-1].split('.')[0] #assume no dots in file name
+        name = os.path.splitext(f)[0].split(os.sep)[-1]
         N.append(name)
 
         mp = MaskPainter(o_img.copy(), config, screen_size)
         out, Z = mp.LabelWindow()
-        out = out.astype('int')
+
+        out = out.astype(np.uint8)
         nx, ny = np.shape(out)
         gridy, gridx = np.meshgrid(np.arange(ny), np.arange(nx))
-        o_img, profile = OpenImage(f, config['im_order'], config['num_bands'])
+        #o_img, profile = OpenImage(f, config['im_order'], config['num_bands'])
 
         counter = 0
         for ind in Z:
@@ -704,50 +797,66 @@ if __name__ == '__main__':
                     grid_y=gridy[ind[0]:ind[1], ind[2]:ind[3]])
            counter += 1
 
+        del Z, gridx, gridy, o_img
         outfile = config['label_folder']+os.sep+name+"_"+class_str+".npy"
         np.save(outfile, out)
         print("annotations saved to %s" % (outfile))
+        del out
 
     print("Sparse labelling complete ...")
     print("Dense labelling ... this may take a while")
 
     # cycle through each image root name, stored in N
     for name in N:
+        print("Working on %s" % (name))
         # get a list of the temporary npz files
         label_files = sorted(glob(config['label_folder']+os.sep+name +'*tmp*'+class_str+'.npz'))
-        print("Found %i files" % (len(label_files)))
+        print("Found %i image chunks" % (len(label_files)))
 
-        try:
-           # in parallel, get the CRF prediction for each tile
-           o = Parallel(n_jobs = -1, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=None)\
-                       (delayed(DoCrf)(label_files[k], config, name) for k in range(len(label_files)))
-        except:
-           print("Something went wrong with parallel - trying 2 cores ...")
-           o = Parallel(n_jobs = 2, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=None)\
-                       (delayed(DoCrf)(label_files[k], config, name) for k in range(len(label_files)))
-        finally:
-           print("Something went really wrong with parallel - trying 1 core ...")
-           o = Parallel(n_jobs = 1, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=None)\
-                       (delayed(DoCrf)(label_files[k], config, name) for k in range(len(label_files)))
-
-        # load the npy file and get the grid coordinates to assign elements of 'o' below
+        #load data to get the size
         l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
         l = np.load(l)
         nx, ny = np.shape(l)
         del l
+        apply_fact = (nx > 8000) or (ny > 8000)
 
-        # allocate an empty label image
-        resr = np.zeros((nx, ny))
+        if apply_fact: #imagery is large and needs to be chunked
 
-        # assign the CRF tiles to the label image (resr) using the grid positions
-        for k in range(len(o)):
-           l = np.load(label_files[k])
-           resr[l['grid_x'], l['grid_y']] =o[k]
-        del o, l
+           # in parallel, get the CRF prediction for each tile
+           # use all but 1 core (njobs=-2) and use pre_dispatch and max_nbytes to control memory usage
+           o = Parallel(n_jobs = -2, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=1e6)\
+                       (delayed(DoCrf)(label_files[k], config, name) for k in range(len(label_files)))
 
-        # get image file and read it in with the profile of the geotiff, if appropriate
-        imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
-        img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
+           # load the npy file and get the grid coordinates to assign elements of 'ims' below
+           l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
+           l = np.load(l)
+           nx, ny = np.shape(l)
+           del l
+
+           # get image file and read it in with the profile of the geotiff, if appropriate
+           imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
+           img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
+
+           # allocate an empty label image
+           resr = np.zeros((nx, ny))
+
+           # assign the CRF tiles to the label image (resr) using the grid positions
+           for k in range(len(o)):
+              l = np.load(label_files[k])
+              resr[l['grid_x'], l['grid_y']] =o[k]#+1
+           del o, l
+
+        else: #image is small enough to fit on most memory at once
+           print("Imagery is small (<8000 px in all dimensions), so not using chunks - they will be deleted")
+           # get image file and read it in with the profile of the geotiff, if appropriate
+           imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
+           img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
+           l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
+           l = np.load(l).astype(np.uint8)
+
+           resr = getCRF(img,l,config['classes'], config['fact'])
+           #resr += 1
+           del l
 
         # if 3-band image, mask out pixels that are [254, 254, 254]
         if np.ndim(img)==3:
@@ -757,29 +866,32 @@ if __name__ == '__main__':
            resr[img==255] = 0
 
         # mask out null values in mask files
+        #if masks:
+        #   for k in masks:
+        #      ##k==1 is the mask
+        #      resr[k==1] = 0 #0=null category
+        #   del k
+
+        #if masks:
+        #    use = [m for m in mask_names if \
+        #           m.startswith(os.path.splitext(imfile)[0].replace('images', 'label_images'))][0]
+        #    ind = [i for i in range(len(mask_names)) if mask_names[i]==use][0]
+        #    resr[masks[ind]==1] = 255
+
         if masks:
-           for k in masks:
-              ##k==1 is the mask
-              resr[k==1] = 0 #0=null category
+            use = [m for m in mask_names if \
+                   m.startswith(os.path.splitext(imfile)[0].replace('images', 'label_images'))]
+                   
+            for u in use:
+               ind = [i for i in range(len(mask_names)) if mask_names[i]==u][0]
+               resr[masks[ind]==1] = 0
+
 
         # plot the result and make label image files
         PlotAndSave(img.copy(), resr, name, config, class_str, profile)
 
-        #remove the temporary npz files
-        for f in label_files:
-           os.remove(f)
+        del resr, img
 
-
-#
-# import cv2
-# import numpy as np
-# import tifffile
-#
-# im1 = cv2.imread('data/images/4_rgb.png')
-# im2 = cv2.imread('data/images/4_elev.png')[:,:,0]
-#
-# merged = np.dstack((im1, im2)).astype(np.uint8) # creates a numpy array with 6 channels
-#
-# tifffile.imsave('merged.tiff', merged, planarconfig='contig')
-#
-# im3 = tifffile.imread('merged.tiff')
+        # #remove the temporary npz files
+        # for f in label_files:
+        #    os.remove(f)

@@ -1,4 +1,4 @@
-# "Doodle Labeller"
+# "Doodle Labeler"
 
 > Daniel Buscombe, Marda Science daniel@mardascience.com
 
@@ -18,9 +18,9 @@ There are many great tools for exhaustive (i.e. whole image) image labeling for 
 
 What is generally required in the above case is a semi-supervised tool for efficient image labeling, based on sparse examples provided by a human annotator. Those sparse annotations are used by a secondary automated process to estimate the class of every pixel in the image. The number of pixels annotated by the human annotator is typically a small fraction of the total pixels in the image.  
 
-`Doodler` is a tool for exemplative, not exhaustive, labelling. The approach taken here is to freehand label only some of the scene, then use a model to complete the scene. Sparse annotations are provided to a Conditional Random Field (CRF) model, that develops a scene-specific model for each class and creates a dense (i.e. per pixel) label image based on the information you provide it. This approach can reduce the time required for detailed labeling of large and complex scenes by an order of magnitude or more.
+`Doodler` is a tool for "exemplative", not exhaustive, labeling. The approach taken here is to freehand label only some of the scene, then use a model to complete the scene. Sparse annotations are provided to a Conditional Random Field (CRF) model, that develops a scene-specific model for each class and creates a dense (i.e. per pixel) label image based on the information you provide it. This approach can reduce the time required for detailed labeling of large and complex scenes by an order of magnitude or more.
 
-This tool is also set up to tackle image labelling in stages, using minimal annotations. For example, by labeling individual classes then using the resulting binary label images as masks for the imagery to be labeled for subsequent classes. Labeling is acheived using the `doodler.py` script
+This tool is also set up to tackle image labeling in stages, using minimal annotations. For example, by labeling individual classes then using the resulting binary label images as masks for the imagery to be labeled for subsequent classes. Labeling is achieved using the `doodler.py` script
 
 Label images that are outputted by `doodler.py` can be merged using `merge.py`, which uses a CRF approach again to refine labels based on a windowing approach with 50% overlap. This refines labels further based on the underlying image.
 
@@ -32,6 +32,19 @@ Label images that are outputted by `doodler.py` can be merged using `merge.py`, 
 * label: an annotation made on an image attributed to a class (either manually or automatically - in this program, annotations are manual)
 * label image: an image where each pixel has been labeled with a class (either manually or automatically - in this program, the label image is generated automatically using a machine learning algorithm called a CRF)
 * binary label image: a label image of 2 classes (the class of interest and everything else)
+
+## Updates since last version (twelfty)
+
+1. CRF inference is now faster and hopefully more robust
+2. better use of memory
+3. smaller output file sizes
+4. masking is now specified by type/name rather than filename, allowing for merging of multiple sets of image labels that conform to a common pattern
+5. labeling still happens in chunks, but inference uses merged chunks for smaller imagery (<8000 px in all dimensions)
+6. `doodler.py` now automatically computes the optimal CRF hyperparameters for each image chunk. I have done a lot of research into the sensitivity of results to input hyperparameters. The variation can be massive; therefore I have hard-coded some values in, implemented formulas for others, and allow the program to attempt to search for the remaining hyperparameters values. Seems to work ok in tests but please report
+7. the optimization of the hyperparameters happens on subsampled imagery (unless any image chunk dimension is less than 2000 pixels), which is faster and less memory intensive and still results in sensible outputs
+8. periods (other than to specify the file extension) are now allowed in input image file names
+9. `merge.py` will only use chunks if any image dimension is less than 2000 pixels
+10. `merge.py` now makes a semi-transparent overlay figure (like `doodler.py` does)
 
 
 ## How to use
@@ -58,7 +71,7 @@ The program will read 1- and 3-band imagery in all common file formats supported
 
 This software is undergoing development and is subject to frequent change. In particular, 1d and 4d imagery has not been extensively tested so please expect bugs. Proper documentation is forthcoming.
 
-I know the brush thickness buttons doesn't change on the present tile - we are working on a fix
+I know the brush thickness buttons doesn't change on the present tile - I am working on a fix
 
 ### Getting set up video
 
@@ -126,15 +139,10 @@ Several example config files are provided. A generic multi-label case would be s
 	  "ref_im_scale": 0.8,
 	  "lw": 5,
 	  "im_order": "RGB",
-	  "theta_col": 40,
-	  "theta_spat": 5,
-	  "n_iter": 10,
-	  "compat_col": 40,
-	  "compat_spat": 5,
-	  "scale": 5,
-	  "prob": 0.4,
-		"alpha": 0.5,
+	  "alpha": 0.5,
 	  "apply_mask": "None",
+	  "num_bands": 3,
+	  "create_gtiff": "false",
 	  "classes": {
 	   "Surf_Swash": "#fcf9f9",
 	   "Water": "#3b81d0",
@@ -156,23 +164,16 @@ where
 * "ref_im_scale": the proportion of the detected screen size to make the window (suggested: 0.5 -- 1.0)
 * "lw": initial pen width in pixels. this can be changed on the fly (suggested range: 5 - 10, depending on image size)
 * "im_order": either "RGB" or "BGR", depending on what type of imagery you have (RGB is more common)
-* "theta_col": standard deviations for the location component of the colour-dependent term. (suggested range: 20 -- 60)
-* "theta_spat": standard deviations for the location component of the colour-independent term. (suggested range: 1--10)
-* "compat_col": label compatibilities for the colour-dependent term
-* "compat_spat": label compatibilities for the colour-independent term
-* "scale": spatial smoothness parameter (pixels)
-* "prob": assumed probability of input labels
 * 'alpha': the degree of transparency in merged image-output plots
 * "n_iter": number of iterations of CRF inference.
 * "classes": a dictionary of class names and associated colors as hex codes. There are various online color pickers including [this one](https://htmlcolorcodes.com/)
 * "apply_mask": either `None` (if no pre-masking) or a list of binary label images with which to mask the image
+* "num_bands": the number of bands in the input imagery (e.g. 1, 3, or 4)
+* "create_gtiff": if "true", the program will create a geotiff label image - only appropriate if the input image is also geotiff. Otherwise, "false"
 
 This file can be saved anywhere and called anything, but it must have the `.json` format extension.
 
 Note that if you get errors reading your config file, it is probably because you have put commas where you shouldn't, or have left commas out
-
-Also note that the program uses an average of label image estimated using the specified `theta_col` and `theta_spat`, 2 x `theta_col` and 2 x `theta_spat`, and 0.5 x `theta_col` and 0.5 x `theta_spat`. This increases performance, and lessens the pressure on the user to specify those parameters exactly. The suggested values work for most cases.
-
 
 ## Run doodler.py
 Assuming you have already activated the conda environment (`conda activate doodler` - see above) ...
@@ -193,12 +194,11 @@ python doodler.py -c config_file.json
 The title of the window is the label that will be associated with the pixels
 you draw on, by holding down the left mouse button.
 
-* After you are done with label press `escape` (Esc key, usually the top left corner on your keyboard).
-* You can increase and decrease the brush width with `+ / -` keys.
+* After you are done with label (or if you need to skip a class because it is not present in the current tile) press `escape` (Esc key, usually the top left corner on your keyboard).
+* You can increase and decrease the brush width with (number) `1 / 2` keys.
 * You can also undo a mistake with the `z` key.
 * Use s to skip forward a square (note that this will not record any labels done on the current square - this feature is for squares with no labels to make)
 * Use b to go back a square
-* Use number keys to switch label
 
 If your mouse has a scroll wheel, you can use that to zoom in and out. Other navigation options (zoom, pan, etc) are available with a right mouse click.
 
@@ -207,9 +207,9 @@ After you have labeled each image tile for each image, the program will automati
 
 ## Run merge.py
 
-This script takes each individual mask image and merges them into one, keeping track of classes and class colors. This script takes a while to run, because it splits the merged image into small pieces that overlap by 50%, carries out a task-specific CRF-based label refinement on each, then averages the results. The idea is to refine the image by over-sampling. Finally, a median filter is applied with an 11-pixel radius circular structural element, to smooth high-frequency noise.
+This script takes each individual mask image and merges them into one, keeping track of classes and class colors. It optimizes the CRF parameters for each chunk. This script takes a while to run, because it splits the merged image into small pieces, carries out a task-specific CRF-based label refinement on each, then averages the results. The idea is to refine the image by over-sampling.
 
-The amount of time the program takes is a function of the size of the image, and the number of CPU cores. The program uses all available cores, so machines with many cores will be faster. The program takes about 7 mins for a > 7000 x 4000 image using 8 Intel i7 2.9 GHz cores. Use of 16 cores of equivalent specification would approximately half the execution time, as would an image of half as many pixels.   
+The amount of time the program takes is a function of the size of the image, and the number of CPU cores. The program uses all available cores, so machines with many cores will be faster.
 
 Assuming you have already activated the conda environment (`conda activate doodler` - see above) ...
 
@@ -231,13 +231,9 @@ An example config file is provided:
 	{
 	  "image_folder" : "data/images",
 	  "im_order": "RGB",
-	  "theta_col": 40,
-	  "theta_spat": 5,
-	  "n_iter": 10,
-	  "compat_col": 40,
-	  "compat_spat": 5,
-	  "scale": 5,
-	  "prob": 0.4,  
+    "alpha": 0.5,  
+    "num_bands": 3,
+    "create_gtiff": "false",  
 	  "outfile": "data/label_images/2019-0830-195300-DSC04880-N7251F_merged_label.png",
 
 	  "to_merge": {
@@ -283,12 +279,11 @@ where most of the fields are the same as above, except
 * "classes1", "classes2", etc: these are the class names and hex color codes associated with each label image in "to_merge", in order
 
 ## Improvements coming soon
-* fix the line width issue
+* fix the line width issue on the current image tile
 * compiled executables
 * lookup table for consistent hex colors for common classes
 * config file generator (GUI?)
 * move labelling window to different screen option?
-* CRF "redo"/ optimize function, to search through a range of hyperparameters and find optimal ... needs research
 
 
 <!--

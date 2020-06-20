@@ -4,19 +4,16 @@
   "max_x_steps": 4,
   "max_y_steps": 4,
   "ref_im_scale": 0.8,
-  "lw": 5,
+  "lw": 15,
   "im_order": "RGB",
-  "theta_col": 40,
-  "theta_spat": 5,
-  "n_iter": 10,
-  "compat_col": 40,
-  "compat_spat": 5,
-  "scale": 5,
-  "prob": 0.4,
-  "alpha": 0.5,  
-  "apply_mask": {"water":  "data/label_images/2019-0830-195300-DSC04880-N7251F_water_no_water_label.png"},
+  "alpha": 0.5,
+  "num_bands": 3,
+  "create_gtiff": "false",
+  "apply_mask": "water",
   "classes": {
-   "vegetation": "#c0d03b",
-   "no_vegetation": "#e35259"
+   "veg_dune_grass": "#6eaf29",
+   "veg_other_grass":"#13dc19",
+   "veg_woody": "#1a7120",
+   "no_veg": "#e35259"
  }
 }
