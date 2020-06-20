@@ -1,4 +1,4 @@
-# "Doodle Labeler"
+# "Doodle Labeller"
 
 > Daniel Buscombe, Marda Science daniel@mardascience.com
 
@@ -53,9 +53,9 @@ This is python software that is designed to be used from within a `conda` enviro
 
 This tool can be used in a few different ways, including:
 
-1. Create a label image in one go, by defining all classes at once in a single config file
+1. Create a label image in one go, by defining all classes at once in a single `config` file
 
-2. Create a label image in stages, by defining subsets of classes in multiple config files (then optionally merging them afterwards using `merge.py`)
+2. Create a label image in stages, by defining subsets of classes in multiple `config` files (then optionally merging them afterwards using `merge.py`)
 
 The second option is possibly more time-efficient for complex scenes. It might also be advantageous for examining the error of labels individually.
 
@@ -137,39 +137,42 @@ Several example config files are provided. A generic multi-label case would be s
 	  "max_x_steps": 4,
 	  "max_y_steps": 4,
 	  "ref_im_scale": 0.8,
-	  "lw": 5,
+	  "lw": 15,
 	  "im_order": "RGB",
 	  "alpha": 0.5,
-	  "apply_mask": "None",
 	  "num_bands": 3,
 	  "create_gtiff": "false",
+	  "apply_mask": ["water", "veg"],
 	  "classes": {
-	   "Surf_Swash": "#fcf9f9",
-	   "Water": "#3b81d0",
-	   "BareSand": "#c0d03b",
-	   "Grass_Shrub": "#62894d",
-	   "WoodyVeg": "#395c27",
-	   "MarshPlatform": "#94925c",
-	   "Road": "#888c8c",
-	   "Anthro": "#23ad96"
-	 }
+	   "sand": "#c0d03b",
+	   "roads": "#696669",
+	   "buildings": "#de3e5d",
+	   "people": "#74346b",
+	   "cars": "#dd9c1a"
+	   }
 	}
 
-where
+where the required arguments are:
 
-* "image_folder" : ordinarily this would be "data/images" but could be a relative path to any relative directory
-* "label_folder": see the above but for "data/label_images"
-* "max_x_steps": number of tiles to split the image up in x direction (suggested range: 1- 6, depending on image size/complexity)
-* "max_y_steps": number of tiles to split the image up in y direction (suggested range: 1- 6, depending on image size/complexity)
-* "ref_im_scale": the proportion of the detected screen size to make the window (suggested: 0.5 -- 1.0)
-* "lw": initial pen width in pixels. this can be changed on the fly (suggested range: 5 - 10, depending on image size)
-* "im_order": either "RGB" or "BGR", depending on what type of imagery you have (RGB is more common)
-* 'alpha': the degree of transparency in merged image-output plots
-* "n_iter": number of iterations of CRF inference.
-* "classes": a dictionary of class names and associated colors as hex codes. There are various online color pickers including [this one](https://htmlcolorcodes.com/)
-* "apply_mask": either `None` (if no pre-masking) or a list of binary label images with which to mask the image
-* "num_bands": the number of bands in the input imagery (e.g. 1, 3, or 4)
-* "create_gtiff": if "true", the program will create a geotiff label image - only appropriate if the input image is also geotiff. Otherwise, "false"
+* `image_folder` : ordinarily this would be "data/images" but could be a relative path to any relative directory
+* `label_folder`: see the above but for "data/label_images"
+* `max_x_steps`: number of tiles to split the image up in x direction (suggested range: 1- 6, depending on image size/complexity)
+* `max_y_steps`: number of tiles to split the image up in y direction (suggested range: 1- 6, depending on image size/complexity)
+* `ref_im_scale`: the proportion of the detected screen size to make the window (suggested: 0.5 -- 1.0)
+* `lw`: initial pen width in pixels. this can be changed on the fly (suggested range: 5 - 10, depending on image size)
+* `im_order`: either "RGB" or "BGR", depending on what type of imagery you have (RGB is more common)
+* `classes`: a dictionary of class names and associated colours as hex codes. There are various online colour pickers including [this one](https://htmlcolorcodes.com/)
+
+
+and the optional arguments and their default values:
+
+* `apply_mask`: either `None` (if no pre-masking) or a list of label names with which to mask the image. These label images should already exist *Default = None*
+* "num_bands": the number of bands in the input imagery (e.g. 1, 3, or 4). *Default = 3*
+* `create_gtiff`: if "true", the program will create a geotiff label image - only appropriate if the input image is also geotiff. Otherwise, "false" *Default = false*
+* `alpha`: the degree of transparency in merged image-output plots *Default = 0.5*
+* `fact`: the factor by which to downsample by imagery. *Default = 5* (this might seem large, but trust me the CRF is very cpu and memory intensive otherwise, and the results work with a large `fact` turn out ok. Reduce to get finer resolution results by be warned, it will take a lot longer. )
+* `compat_col`: compatibility value for the color/space-dependent term in the model, initial value for search. *Default = 20*
+* `theta_col`: standard deviation value for the color/space-dependent term in the model, initial value for search. *Default = 20*
 
 This file can be saved anywhere and called anything, but it must have the `.json` format extension.
 
@@ -194,11 +197,11 @@ python doodler.py -c config_file.json
 The title of the window is the label that will be associated with the pixels
 you draw on, by holding down the left mouse button.
 
-* After you are done with label (or if you need to skip a class because it is not present in the current tile) press `escape` (Esc key, usually the top left corner on your keyboard).
+* After you are done with label (or if you need to skip a class because it is not present in the current tile) press `escape` (`Esc` key, usually the top left corner on your keyboard).
 * You can increase and decrease the brush width with (number) `1 / 2` keys.
 * You can also undo a mistake with the `z` key.
-* Use s to skip forward a square (note that this will not record any labels done on the current square - this feature is for squares with no labels to make)
-* Use b to go back a square
+* Use `s` to skip forward a square (note that this will not record any labels done on the current square - this feature is for squares with no labels to make)
+* Use `b` to go back a square
 
 If your mouse has a scroll wheel, you can use that to zoom in and out. Other navigation options (zoom, pan, etc) are available with a right mouse click.
 
@@ -207,7 +210,7 @@ After you have labeled each image tile for each image, the program will automati
 
 ## Run merge.py
 
-This script takes each individual mask image and merges them into one, keeping track of classes and class colors. It optimizes the CRF parameters for each chunk. This script takes a while to run, because it splits the merged image into small pieces, carries out a task-specific CRF-based label refinement on each, then averages the results. The idea is to refine the image by over-sampling.
+This script takes each individual mask image and merges them into one, keeping track of classes and class colours. It optimizes the CRF parameters for each chunk. This script takes a while to run, because it splits the merged image into small pieces, carries out a task-specific CRF-based label refinement on each, then averages the results. The idea is to refine the image by over-sampling.
 
 The amount of time the program takes is a function of the size of the image, and the number of CPU cores. The program uses all available cores, so machines with many cores will be faster.
 
@@ -228,20 +231,14 @@ python merge.py -c config_merge.json
 An example config file is provided:
 
 	{
-	{
 	  "image_folder" : "data/images",
+	  "label_folder": "data/label_images",
 	  "im_order": "RGB",
-    "alpha": 0.5,  
-    "num_bands": 3,
-    "create_gtiff": "false",  
-	  "outfile": "data/label_images/2019-0830-195300-DSC04880-N7251F_merged_label.png",
+	  "alpha": 0.5,
+	  "num_bands": 3,
+	  "create_gtiff": "false",
 
-	  "to_merge": {
-	  "water":  "data/label_images/2019-0830-195300-DSC04880-N7251F_water_no_water_label.png",
-	  "veg": "data/label_images/2019-0830-195300-DSC04880-N7251F_vegetation_no_vegetation_label.png",
-	  "anthro": "data/label_images/2019-0830-195300-DSC04880-N7251F_anthro_no_anthro_label.png",
-	  "substrate": "data/label_images/2019-0830-195300-DSC04880-N7251F_sand_mud_gravel_boulders_snow_ice_wrack_peat_indeterminate_label.png"
-	   },
+	  "to_merge": ["water","veg","sand"],
 
 	  "classes1":
 	  {
@@ -251,38 +248,53 @@ An example config file is provided:
 
 	  "classes2":
 	  {
-	   "vegetation": "#29f120",
-	   "no_vegetation": "#e35259"
-	  },  
+	    "veg_dune_grass": "#6eaf29",
+	    "veg_other_grass":"#13dc19",
+	    "veg_woody": "#1a7120",
+	    "no_veg": "#e35259"
+	  },
 
 	  "classes3":
 	  {
-	   "anthro": "#f12063",
-	   "no_anthro": "#e35259"
-	  },  
-
-	  "classes4":
-	  {
-	   "sand": "#c0d03b",
-	   "mud": "#62894d",
-	   "gravel": "#395c27",
-	   "boulders": "#94925c",
-	   "snow_ice": "#888c8c",
-	   "wrack_peat": "#23ad96",
-	   "indeterminate": "#9e289c"
+	    "sand": "#c0d03b",
+	    "roads": "#696669",
+	    "buildings": "#de3e5d",
+	    "people": "#74346b",
+	    "cars": "#dd9c1a"
 	   }
 	}
 
-where most of the fields are the same as above, except
+The required arguments are:
 
-* "to_merge": a list of label images (generated by `doodler.py`) to merge
-* "classes1", "classes2", etc: these are the class names and hex color codes associated with each label image in "to_merge", in order
+* `to_merge`: a list of label images (generated by `doodler.py`) to merge
+* `classes1`, `classes2`, etc: these are the class names and hex colour codes associated with each label image in `to_merge`, in order.  There are various online colour pickers including [this one](https://htmlcolorcodes.com/)
+* `im_order`: either "RGB" or "BGR", depending on what type of imagery you have (RGB is more common)
+* `image_folder` : ordinarily this would be "data/images" but could be a relative path to any relative directory
+* `label_folder`: see the above but for "data/label_images"
+
+and the optional arguments and their default values:
+
+* "num_bands": the number of bands in the input imagery (e.g. 1, 3, or 4). *Default = 3*
+* `create_gtiff`: if "true", the program will create a geotiff label image - only appropriate if the input image is also geotiff. Otherwise, "false" *Default = false*
+* `alpha`: the degree of transparency in merged image-output plots *Default = 0.5*
+* `fact`: the factor by which to downsample by imagery. *Default = 5* (this might seem large, but trust me the CRF is very cpu and memory intensive otherwise, and the results work with a large `fact` turn out ok. Reduce to get finer resolution results by be warned, it will take a lot longer. )
+* `compat_col`: compatibility value for the color/space-dependent term in the model, initial value for search. *Default = 20*
+* `theta_col`: standard deviation value for the color/space-dependent term in the model, initial value for search. *Default = 20*
+
+
+
+## Got a bad result?
+
+Did you get a disappointing result from `doodler.py`? You could redo the labelling, this time using `doodler_optim.py`. This script works in the same way as `doodler.py` but attempts to help with problematic imagery. It performs a much wider hyperparameter search and the Kullback-Leibler (KL) divergence for each realization is computed. The minimum KL-divergence is returned as the "optimal" result. It often results in fairly coarse resolution labelling relative to `doodler.py` but tends tp maximize the accuracy of the main segments in the image.
+
+Why redo the labelling? You'll be more careful this time :)
+
 
 ## Improvements coming soon
 * fix the line width issue on the current image tile
 * compiled executables
-* lookup table for consistent hex colors for common classes
-* config file generator (GUI?)
+* lookup table for consistent hex colours for common classes
+* config file generator (need a GUI?)
 * move labelling window to different screen option?
 
 
