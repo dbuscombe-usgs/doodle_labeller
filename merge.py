@@ -9,7 +9,7 @@
 # > Daniel Buscombe, Marda Science daniel@mardascience.com
 # > USGS Pacific Marine Science Center
 #
-import os, json, csv
+import os, json, csv, itertools
 import sys, getopt
 import cv2
 import numpy as np
@@ -431,265 +431,595 @@ if __name__ == '__main__':
     if "theta_col" not in config:
        config['theta_col'] = 20
 
-
-    ##===================================================
+    #=======================================================================
+    #=========================SORT =========================
+    #=======================================================================
 
     ## list of label images to combine
-    #to_merge = [config['to_merge'][k] for k in config['to_merge'].keys()]
-
     to_merge = []
     if type(config["to_merge"]) is str:
-       to_search = glob(config['label_folder']+os.sep+'*'+config["apply_mask"]+'*label.png')
+       to_search = glob(config['label_folder']+os.sep+'*'+config["apply_mask"]+'*_label.png')
        to_merge.append(to_search)
     elif type(config["to_merge"]) is list:
        for k in config["to_merge"]:
-          to_search = glob(config['label_folder']+os.sep+'*'+k+'*label.png')[0]
+          to_search = glob(config['label_folder']+os.sep+'*'+k+'*label.png')
           to_merge.append(to_search)
 
+    ##to_merge is a list of list. nested lists are per class, not per site
+    to_merge = [sorted(m) for m in to_merge]
+
+    # sort out how many images and labels per image
+    num_class_sets = len(to_merge)
+    num_ims_per_set = len(to_merge[0])
 
     ##list of associated class sets
     class_sets = [c for c in config.keys() if c.startswith('class')]
 
-    ## get first mask in list
-    img = cv2.imread(to_merge[0])
+    class_str = ['_'.join(config[cc].keys()) for cc in class_sets]
 
-    ## allocate empty array of same dimensions
-    msk = np.zeros((img.shape), dtype=np.uint8)
-    del img
+    all_names = [os.path.splitext(n)[0].split(os.sep)[-1] for n in list(itertools.chain(*to_merge)) ]
 
-    ##allocate empty dictionary for classes and rgb colors
-    class_dict = {}
+    all_stripped_names = []
+    for name in all_names:
+       for c in class_str:
+          if c in name:
+             all_stripped_names.append(name.split(c)[0])
 
-    ## get rgb label for first label image
-    msk, classes_names, rgb, classes_colors, _ = merge_labels(msk, cv2.imread(to_merge[0]), config[class_sets[0]])
+    all_stripped_names = np.unique(all_stripped_names)
 
-    H = []; #NH = []
-    ##update dictionary
-    for c,r,h in zip(classes_names, rgb, classes_colors):
-       class_dict[c] = r
-       H.append(h)
 
-    ## do same for rest of class sets
-    for ii,cc in zip(to_merge[1:], class_sets[1:]):
-       msk, classes_names, rgb, classes_colors, _ = merge_labels(msk, cv2.imread(ii), config[cc])
+    to_merge_per_set = []
+    for k in all_stripped_names:
+       to_merge_per_set.append([n for n in all_names if n.startswith(k)])
+
+    #=======================================================================
+    #=========================DO =========================
+    #=======================================================================
+    counter = 0
+    #main loop for merging masks
+    for this_set in to_merge_per_set:
+
+       img = cv2.imread(config['label_folder']+os.sep+this_set[0]+'.png')
+       msk = np.zeros((img.shape), dtype=np.uint8)
+       del img
+
+       ##allocate empty dictionary for classes and rgb colors
+       class_dict = {}
+       H = []
+
+       msk, classes_names, rgb, classes_colors, _ = merge_labels(msk, cv2.imread(config['label_folder']+os.sep+this_set[0]+'.png'), config[class_sets[0]])
+
+       ##update dictionary
        for c,r,h in zip(classes_names, rgb, classes_colors):
           class_dict[c] = r
           H.append(h)
 
+       xcounter = 1
+       for ii,cc in zip(this_set[1:], class_sets[1:]):
+          msk, classes_names, rgb, classes_colors, _ = merge_labels(msk, cv2.imread(config['label_folder']+os.sep+ii+'.png'), config[cc])
+          for c,r,h in zip(classes_names, rgb, classes_colors):
+             class_dict[c] = r
+             H.append(h)
+          xcounter += 1
 
-    outfile = to_merge[0].split('label.png')[0].split(list(config['classes1'])[0])[0]+'rgb.csv'
+       class_str2 = ''
+       for cc in class_str:
+          class_str2+=cc
 
-    ##write class dict to csv file
-    with open(outfile, 'w') as f:
-       f.write("%s,%s,%s,%s\n" % ('class', 'r', 'g', 'b' ))
-       for key in class_dict.keys():
-          f.write("%s,%s\n" % (key, str(class_dict[key]).replace(')','').replace('(','')) )
+       outfile = config['label_folder']+os.sep+all_stripped_names[counter]+class_str2+'_rgb.csv'
 
-    num_classes = len(class_dict)
+       ##write class dict to csv file
+       with open(outfile, 'w') as f:
+          f.write("%s,%s,%s,%s\n" % ('class', 'r', 'g', 'b' ))
+          for key in class_dict.keys():
+             f.write("%s,%s\n" % (key, str(class_dict[key]).replace(')','').replace('(','')) )
 
-    ##===================================================
+       print("Writing our RGB image to %s" % (outfile))
+       cv2.imwrite(outfile.replace('_rgb.csv','_label_rgb.png'), cv2.cvtColor(msk , cv2.COLOR_RGB2BGR) )
 
-    outfile = outfile.replace('rgb.csv','merged_rgb_label.png')
 
-    ## write out initial rgb image (this will be revised by CRF later)
-    print("Writing our RGB image to %s" % (outfile))
-    cv2.imwrite(outfile, cv2.cvtColor(msk, cv2.COLOR_RGB2BGR) )
+       ##get rgb colors
+       cols = [class_dict[c] for c in class_dict.keys()]
+       ## flatten 3d label image to 2d
+       msk_flat = flatten_labels(msk, cols )
+       msk_flat = msk_flat.astype('uint8')
+       del msk
 
-    ##get rgb colors
-    cols = [class_dict[c] for c in class_dict.keys()]
-    ## flatten 3d label image to 2d
-    msk_flat = flatten_labels(msk, cols )
-    msk_flat = msk_flat.astype('uint8')
-    del msk
+       ##===================================================
 
-    ## get image files list
-    files = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*.*')))
+       imfile = glob(config['image_folder']+os.sep+all_stripped_names[counter][:-1]+'*.*')[0]
+       ##read image
+       img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
 
-    ##get image names
-    names = [os.path.splitext(f)[0].split(os.sep)[-1] for f in files]
+       ## get CRF label refinement
+       print("Dense labelling ... this may take a while")
 
-    ## the file to use
-    imfile = [n for n in names if outfile.split('/')[-1].startswith(n)][0]
-    ##the file to use with full path
-    to_use = [f for f in files if imfile in f][0]
+       ##50% overlap between tiles = .5, no overlap = 1.
+       overlap = 1.
+       nx, ny, nz = np.shape(img)
+       ##number of chunks in each dimension
+       num_chunks = gcd(nx, ny)
 
-    ##===================================================
+       ##===================================================
 
-    ##read image
-    img, profile = OpenImage(to_use, config['im_order'], config['num_bands'])
+       if (num_chunks==nx) | (num_chunks==ny):
+          ## do this without windowing/overlap
+          res = getCRF(img, msk_flat+1, class_dict, config['fact'])-1
 
-    ## get CRF label refinement
-    print("Dense labelling ... this may take a while")
+       elif num_chunks>100:
 
-    ##50% overlap between tiles = .5, no overlap = 1.
-    overlap = 1.
-    nx, ny, nz = np.shape(img)
-    ##number of chunks in each dimension
-    num_chunks = gcd(nx, ny)
+          res = getCRF(img, msk_flat+1, class_dict, config['fact'])-1
 
-    ##===================================================
+       else:
 
-    if (num_chunks==nx) | (num_chunks==ny):
-       ## do this without windowing/overlap
-       res = getCRF(img, msk_flat+1, class_dict, config['fact'])-1
+          apply_fact = (nx > 8000) or (ny > 8000)
 
-    elif num_chunks>100:
+          if apply_fact:
 
-       res = getCRF(img, msk_flat+1, class_dict, config['fact'])-1
+             ##size of each chunk
+             sx = int(nx/(num_chunks))
+             sy = int(ny/(num_chunks))
+             ssx = int(overlap*sx)
+             ssy = int(overlap*sy)
 
-    else:
+             ##gets small overlapped image windows
+             Z, indZ = sliding_window(img, (sx, sy, nz), (ssx, ssy, nz))
+             ##gets small overlapped label windows
+             L, indL = sliding_window(msk_flat, (sx, sy), (ssx, ssy))
+             del msk_flat
 
-       apply_fact = (nx > 8000) or (ny > 8000)
-       
-       if apply_fact:
+             print("working on %i chunks, each %i x %i pixels" % (len(Z), sx, sy))
 
-          ##size of each chunk
-          sx = int(nx/(num_chunks))
-          sy = int(ny/(num_chunks))
-          ssx = int(overlap*sx)
-          ssy = int(overlap*sy)
-
-          ##gets small overlapped image windows
-          Z, indZ = sliding_window(img, (sx, sy, nz), (ssx, ssy, nz))
-          ##gets small overlapped label windows
-          L, indL = sliding_window(msk_flat, (sx, sy), (ssx, ssy))
-          del msk_flat
-
-          print("working on %i chunks, each %i x %i pixels" % (len(Z), sx, sy))
-
-          ## process each small image chunk in parallel, with one core left over
-          o = Parallel(n_jobs = -2, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=1e6)\
+             ## process each small image chunk in parallel, with one core left over
+             o = Parallel(n_jobs = -2, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=1e6)\
                    (delayed(getCRF_optim)(Z[k], L[k], num_classes, config['fact']) for k in range(len(Z)))
 
-          ims, theta_cols, compat_cols  = zip(*o)  ##, compat_spats, theta_spats, probs
-          del o, Z, L
+             ims, theta_cols, compat_cols  = zip(*o)  ##, compat_spats, theta_spats, probs
+             del o, Z, L
 
-          #get the median of each as the global best for the image
-          theta_col = np.nanmedian(theta_cols)
-          compat_col = np.nanmedian(compat_cols)
+             #get the median of each as the global best for the image
+             theta_col = np.nanmedian(theta_cols)
+             compat_col = np.nanmedian(compat_cols)
 
-          print("======================================")
-          print("Optimal color theta for this image: %f" % (theta_col))
-          print("Optimal color compat for this image: %f" % (compat_col))
-          print("======================================")
+             print("======================================")
+             print("Optimal color theta for this image: %f" % (theta_col))
+             print("Optimal color compat for this image: %f" % (compat_col))
+             print("======================================")
 
-          ## get grids to deal with overlapping values
-          gridy, gridx = np.meshgrid(np.arange(ny), np.arange(nx))
-          ## get sliding windows
-          Zx,_ = sliding_window(gridx, (sx, sy), (ssx, ssy))
-          Zy,_ = sliding_window(gridy, (sx, sy), (ssx, ssy))
-          del gridx, gridy
+             ## get grids to deal with overlapping values
+             gridy, gridx = np.meshgrid(np.arange(ny), np.arange(nx))
+             ## get sliding windows
+             Zx,_ = sliding_window(gridx, (sx, sy), (ssx, ssy))
+             Zy,_ = sliding_window(gridy, (sx, sy), (ssx, ssy))
+             del gridx, gridy
 
-          ## get two grids, one for division and one for accumulation
-          ## this is to handle any amount of overlap between tiles
-          av = np.zeros((nx, ny))
-          out = np.zeros((nx, ny))
-          for k in range(len(ims)):
-             av[Zx[k], Zy[k]] += 1
-             out[Zx[k], Zy[k]] += ims[k]
+             ## get two grids, one for division and one for accumulation
+             ## this is to handle any amount of overlap between tiles
+             av = np.zeros((nx, ny))
+             out = np.zeros((nx, ny))
+             for k in range(len(ims)):
+                av[Zx[k], Zy[k]] += 1
+                out[Zx[k], Zy[k]] += ims[k]
 
-          ## delete what we no longer need
-          del Zx, Zy, ims
-          ## make the grids by taking an average, plus one, and floor
-          res = np.floor(1+(out/av))-1
-          del out, av
-          
+             ## delete what we no longer need
+             del Zx, Zy, ims
+             ## make the grids by taking an average, plus one, and floor
+             res = np.floor(1+(out/av))-1
+             del out, av
 
-       else: #imagery < 8000 pixels
-          res = getCRF(img, msk_flat+1, class_dict, config['fact'])-1
-          del msk_flat
-          
+          else: #imagery < 10000 pixels
+             res = getCRF(img, msk_flat+1, class_dict, config['fact'])-1
+             del msk_flat
 
-    ##===================================================
-    ## replace large with most populous value
-    res = res.astype(np.uint8)
-    res[res>len(cols)] = np.argmax(np.bincount(res.flatten()))
+       ##===================================================
+       ## replace large with most populous value
+       res = res.astype(np.uint8)
+       res[res>len(cols)] = np.argmax(np.bincount(res.flatten()))
 
-    ##===================================================
-    ## write out the refined flattened label image
-    
-    outfile = outfile.replace('rgb_label.png', 'label_crf.png')
-    
-    print("Writing our 2D label image to %s" % (outfile))
-    cv2.imwrite(outfile,
-	            np.round(255*(res/len(class_dict) )).astype('uint8')) 
+       ##===================================================
+       ## write out the refined flattened label image
+       outfile = outfile.replace('_rgb.csv', '_label_crf.png')
 
-    #write out geotiff label if requested
-    if config['create_gtiff']=='true':
-       image_path = outfile.replace('.png','.tif')
+       print("Writing our 2D label image to %s" % (outfile))
+       cv2.imwrite(outfile,
+	            np.round(255*(res/len(class_dict) )).astype('uint8'))
 
-       WriteGeotiff(image_path, np.round(255*(res/len(class_dict) )).astype('uint8'), profile)
+       #write out geotiff label if requested
+       if config['create_gtiff']=='true':
+          image_path = outfile.replace('.png','.tif')
 
-    ## allocate empty 3D array of same x-y dimensions
-    msk = np.zeros((res.shape)+(3,), dtype=np.uint8)
+          WriteGeotiff(image_path, np.round(255*(res/len(class_dict) )).astype('uint8'), profile)
 
-    ##do the rgb allocation
-    for k in np.unique(res):
-       ind = (res==k)
-       msk[ind] = cols[int(k)-1]
+       ## allocate empty 3D array of same x-y dimensions
+       msk = np.zeros((res.shape)+(3,), dtype=np.uint8)
 
-    ##mask out null portions of image
-    msk[np.sum(img,axis=2)==(254*3)] = 0
+       ##do the rgb allocation
+       for k in np.unique(res):
+          ind = (res==k)
+          msk[ind] = cols[int(k)-1]
 
-    outfile = outfile.replace('label_crf.png', 'rgb_label_crf.png')
+       ##mask out null portions of image
+       msk[np.sum(img,axis=2)==(254*3)] = 0
 
-    ## write out smoothed rgb image
-    print("Writing our RGB image to %s" % (outfile))
-    cv2.imwrite(outfile, cv2.cvtColor(msk, cv2.COLOR_RGB2BGR) )
+       outfile = outfile.replace('_label_crf.png', '_label_rgb_crf.png')
 
-    ##===================================================
-    ## make a matplotlib overlay plot
-    resr = res.astype('float')
-    del res
-    resr[resr<1] = np.nan
-    resr = resr-1
+       ## write out 'smoothed' rgb image
+       print("Writing our RGB image to %s" % (outfile))
+       cv2.imwrite(outfile, cv2.cvtColor(msk, cv2.COLOR_RGB2BGR) )
+       del msk
 
-    try:
-       alpha_percent = config['alpha'] #0.75
-    except:
-       alpha_percent = 0.5
+       ##===================================================
+       ## make a matplotlib overlay plot
+       resr = res.astype('float')
+       del res
+       resr[resr<1] = np.nan
+       resr = resr-1
 
-    new_cols = []
-    for col in H:
-        if not col.startswith('#'):
-            col = '#'+col
-        new_cols.append(col)
-    cmap = colors.ListedColormap(new_cols)
+       try:
+          alpha_percent = config['alpha']
+       except:
+          alpha_percent = 0.5
 
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111) #sp + 1)
-    ax1.get_xaxis().set_visible(False)
-    ax1.get_yaxis().set_visible(False)
+       new_cols = []
+       for col in H:
+          if not col.startswith('#'):
+             col = '#'+col
+          new_cols.append(col)
+       cmap = colors.ListedColormap(new_cols)
 
-    if np.ndim(img)==3:
-       _ = ax1.imshow(img)
-    else:
-       # img = img.astype('float')
-       # img = np.round(255*(img/img.max()))
-       # img[img==0] = np.nan
-       _ = ax1.imshow(img)
+       fig = plt.figure()
+       ax1 = fig.add_subplot(111) #sp + 1)
+       ax1.get_xaxis().set_visible(False)
+       ax1.get_yaxis().set_visible(False)
 
-    im2 = ax1.imshow(resr,
+       if np.ndim(img)==3:
+          _ = ax1.imshow(img)
+       else:
+          _ = ax1.imshow(img)
+
+       im2 = ax1.imshow(resr,
                      cmap=cmap,
                      alpha=alpha_percent, interpolation='nearest',
                      vmin=0, vmax=len(new_cols))
-    divider = make_axes_locatable(ax1)
-    cax = divider.append_axes("right", size="5%")
-    cb=plt.colorbar(im2, cax=cax)
-    cb.set_ticks(0.5 + np.arange(len(new_cols) + 1))
-    cb.ax.set_yticklabels(list(class_dict.keys()) , fontsize=6)
+       divider = make_axes_locatable(ax1)
+       cax = divider.append_axes("right", size="5%")
+       cb=plt.colorbar(im2, cax=cax)
+       cb.set_ticks(0.5 + np.arange(len(new_cols) + 1))
+       cb.ax.set_yticklabels(list(class_dict.keys()) , fontsize=6)
 
-    #name = os.path.splitext(config['outfile'])[0].split(os.sep)[-1]
-    class_str = '_'.join(list(class_dict.keys()))
+       outfile = outfile.replace('label_rgb_crf.png', '_crf_mres.png')
 
-    #outfile = config['image_folder'].replace('images','label_images')+os.sep+name+"_"+class_str+'_mres_merged.png'
-    
-    outfile = outfile.replace('merged_rgb_label_crf.png', class_str+'.png')
-
-    plt.savefig(outfile,
+       plt.savefig(outfile,
                 dpi=300, bbox_inches = 'tight')
-    del fig; plt.close()
-    
-    
-    
-    
+       del fig; plt.close()
+
+       del img, resr
+
+       counter += 1
+
+
+
+
+    #
+    #
+    #
+    # msk = []
+    # ## allocate empty array of same dimensions
+    # for k in range(num_ims_per_set):
+    #
+    #    ## get first mask in list
+    #    if type(config["to_merge"]) is str:
+    #       img = cv2.imread(to_merge[0])
+    #    else:
+    #       img = cv2.imread(to_merge[0][k])
+    #
+    #    msk.append(np.zeros((img.shape), dtype=np.uint8))
+    # del img
+    #
+    # ##allocate empty dictionary for classes and rgb colors
+    # class_dict = {}
+    #
+    # ## get rgb label for first label image(s) in the first set
+    #
+    # H = []; #NH = []
+    # if type(config["to_merge"]) is str:
+    #    msk, classes_names, rgb, classes_colors, _ = merge_labels(msk, cv2.imread(to_merge[0]), config[class_sets[0]])
+    #
+    #    ##update dictionary
+    #    for c,r,h in zip(classes_names, rgb, classes_colors):
+    #       class_dict[c] = r
+    #       H.append(h)
+    #
+    # else:
+    #    for k in range(num_ims_per_set):
+    #       msk[k], classes_names, rgb, classes_colors, _ = merge_labels(msk[k], cv2.imread(to_merge[0][k]), config[class_sets[0]])
+    #
+    #       ##update dictionary
+    #       for c,r,h in zip(classes_names, rgb, classes_colors):
+    #          class_dict[c] = r
+    #          H.append(h)
+    #
+    #
+    # ## do same for rest of class sets
+    # if type(config["to_merge"]) is str: #one image
+    #    counter = 1
+    #    for ii,cc in zip(to_merge[1:], class_sets[1:]):
+    #       msk[counter], classes_names, rgb, classes_colors, _ = merge_labels(msk[counter], cv2.imread(ii), config[cc])
+    #       for c,r,h in zip(classes_names, rgb, classes_colors):
+    #          class_dict[c] = r
+    #          H.append(h)
+    #       counter += 1
+    #
+    # else: #multiple image sets
+    #
+    #    #merged list of image names
+    #    new_list = list(itertools.chain(*to_merge[1:]))
+    #    names = [os.path.splitext(n)[0].split(os.sep)[-1] for n in new_list]
+    #    # merged list of class_str
+    #    class_str = ['_'.join(config[cc].keys()) for cc in class_sets[1:]]
+    #
+    #    # get image names organized per class set
+    #    N = []
+    #    for c in class_str:
+    #       N.append([n for n in names if c in n])
+    #
+    #    # get the class sets (scale them up according to # images per set)
+    #    C = [[config[c]]*int(len(names)/len(class_str)) for c in class_sets[1:]]
+    #
+    #    counter = 0
+    #    for ii,cc in zip(list(itertools.chain(*N)), list(itertools.chain(*C))):
+    #       tmp, classes_names, rgb, classes_colors, _ = merge_labels(msk[counter], cv2.imread(config['label_folder']+os.sep+ii+'.png'), cc )
+    #       msk.append(tmp)
+    #       del tmp
+    #
+    #       ##update dictionary
+    #       for c,r,h in zip(classes_names, rgb, classes_colors):
+    #          class_dict[c] = r
+    #          H.append(h)
+    #
+    #       counter += 1
+    #
+    # ##===================================================
+    # num_classes = len(class_dict)
+    #
+    # if type(config["to_merge"]) is str:
+    #
+    #    outfile = to_merge[0].split('label.png')[0].split(list(config['classes1'])[0])[0]+'rgb.csv'
+    #
+    # else:
+    #
+    #    for k in range(num_ims_per_set):
+    #       outfile = to_merge[0][k].split('label.png')[0].split(list(config['classes1'])[0])[0]+'rgb.csv'
+    #
+    #       ##write class dict to csv file
+    #       with open(outfile, 'w') as f:
+    #          f.write("%s,%s,%s,%s\n" % ('class', 'r', 'g', 'b' ))
+    #          for key in class_dict.keys():
+    #             f.write("%s,%s\n" % (key, str(class_dict[key]).replace(')','').replace('(','')) )
+    #
+    #
+    #    new_list = list(itertools.chain(*to_merge))
+    #    names = [os.path.splitext(n)[0].split(os.sep)[-1] for n in new_list]
+    #
+    #    class_str = ['_'.join(config[cc].keys()) for cc in class_sets]
+    #
+    #    # get image names organized per class set
+    #    N = []
+    #    for c in class_str:
+    #       N.append([n for n in names if c in n])
+    #
+    #    names = [n.split('_')[0] for n in names]
+    #
+    #    inds = []
+    #    for k in np.unique(names):
+    #       inds.append(np.where(np.array(names)==k)[0])
+    #
+    #    allN = list(itertools.chain(*N))
+    #
+    #    counter  = 0
+    #    for k in inds:
+    #       if counter==0:
+    #          n = config['label_folder']+os.sep+names[k[0]]+'.png'
+    #          outfile = n.replace('label.png','merged_rgb_label.png')
+    #
+    #       ## write out initial rgb image (this will be revised by CRF later)
+    #       print("Writing our RGB image to %s" % (outfile))
+    #       cv2.imwrite(outfile, cv2.cvtColor([msk[i] for i in k] , cv2.COLOR_RGB2BGR) )
+    #       counter += 1
+    #
+    #
+    #
+    # ##get rgb colors
+    # cols = [class_dict[c] for c in class_dict.keys()]
+    # ## flatten 3d label image to 2d
+    # msk_flat = flatten_labels(msk, cols )
+    # msk_flat = msk_flat.astype('uint8')
+    # del msk
+    #
+    # ## get image files list
+    # files = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*.*')))
+    #
+    # ##get image names
+    # names = [os.path.splitext(f)[0].split(os.sep)[-1] for f in files]
+    #
+    # ## the file to use
+    # imfile = [n for n in names if outfile.split('/')[-1].startswith(n)][0]
+    # ##the file to use with full path
+    # to_use = [f for f in files if imfile in f][0]
+    #
+    # ##===================================================
+    #
+    # ##read image
+    # img, profile = OpenImage(to_use, config['im_order'], config['num_bands'])
+    #
+    # ## get CRF label refinement
+    # print("Dense labelling ... this may take a while")
+    #
+    # ##50% overlap between tiles = .5, no overlap = 1.
+    # overlap = 1.
+    # nx, ny, nz = np.shape(img)
+    # ##number of chunks in each dimension
+    # num_chunks = gcd(nx, ny)
+    #
+    # ##===================================================
+    #
+    # if (num_chunks==nx) | (num_chunks==ny):
+    #    ## do this without windowing/overlap
+    #    res = getCRF(img, msk_flat+1, class_dict, config['fact'])-1
+    #
+    # elif num_chunks>100:
+    #
+    #    res = getCRF(img, msk_flat+1, class_dict, config['fact'])-1
+    #
+    # else:
+    #
+    #    apply_fact = (nx > 10000) or (ny > 10000)
+    #
+    #    if apply_fact:
+    #
+    #       ##size of each chunk
+    #       sx = int(nx/(num_chunks))
+    #       sy = int(ny/(num_chunks))
+    #       ssx = int(overlap*sx)
+    #       ssy = int(overlap*sy)
+    #
+    #       ##gets small overlapped image windows
+    #       Z, indZ = sliding_window(img, (sx, sy, nz), (ssx, ssy, nz))
+    #       ##gets small overlapped label windows
+    #       L, indL = sliding_window(msk_flat, (sx, sy), (ssx, ssy))
+    #       del msk_flat
+    #
+    #       print("working on %i chunks, each %i x %i pixels" % (len(Z), sx, sy))
+    #
+    #       ## process each small image chunk in parallel, with one core left over
+    #       o = Parallel(n_jobs = -2, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=1e6)\
+    #                (delayed(getCRF_optim)(Z[k], L[k], num_classes, config['fact']) for k in range(len(Z)))
+    #
+    #       ims, theta_cols, compat_cols  = zip(*o)  ##, compat_spats, theta_spats, probs
+    #       del o, Z, L
+    #
+    #       #get the median of each as the global best for the image
+    #       theta_col = np.nanmedian(theta_cols)
+    #       compat_col = np.nanmedian(compat_cols)
+    #
+    #       print("======================================")
+    #       print("Optimal color theta for this image: %f" % (theta_col))
+    #       print("Optimal color compat for this image: %f" % (compat_col))
+    #       print("======================================")
+    #
+    #       ## get grids to deal with overlapping values
+    #       gridy, gridx = np.meshgrid(np.arange(ny), np.arange(nx))
+    #       ## get sliding windows
+    #       Zx,_ = sliding_window(gridx, (sx, sy), (ssx, ssy))
+    #       Zy,_ = sliding_window(gridy, (sx, sy), (ssx, ssy))
+    #       del gridx, gridy
+    #
+    #       ## get two grids, one for division and one for accumulation
+    #       ## this is to handle any amount of overlap between tiles
+    #       av = np.zeros((nx, ny))
+    #       out = np.zeros((nx, ny))
+    #       for k in range(len(ims)):
+    #          av[Zx[k], Zy[k]] += 1
+    #          out[Zx[k], Zy[k]] += ims[k]
+    #
+    #       ## delete what we no longer need
+    #       del Zx, Zy, ims
+    #       ## make the grids by taking an average, plus one, and floor
+    #       res = np.floor(1+(out/av))-1
+    #       del out, av
+    #
+    #
+    #    else: #imagery < 10000 pixels
+    #       res = getCRF(img, msk_flat+1, class_dict, config['fact'])-1
+    #       del msk_flat
+
+
+    # ##===================================================
+    # ## replace large with most populous value
+    # res = res.astype(np.uint8)
+    # res[res>len(cols)] = np.argmax(np.bincount(res.flatten()))
+
+    ##===================================================
+    ## write out the refined flattened label image
+    #
+    # outfile = outfile.replace('rgb_label.png', 'label_crf.png')
+    #
+    # print("Writing our 2D label image to %s" % (outfile))
+    # cv2.imwrite(outfile,
+	#             np.round(255*(res/len(class_dict) )).astype('uint8'))
+    #
+    # #write out geotiff label if requested
+    # if config['create_gtiff']=='true':
+    #    image_path = outfile.replace('.png','.tif')
+    #
+    #    WriteGeotiff(image_path, np.round(255*(res/len(class_dict) )).astype('uint8'), profile)
+    #
+    # ## allocate empty 3D array of same x-y dimensions
+    # msk = np.zeros((res.shape)+(3,), dtype=np.uint8)
+    #
+    # ##do the rgb allocation
+    # for k in np.unique(res):
+    #    ind = (res==k)
+    #    msk[ind] = cols[int(k)-1]
+    #
+    # ##mask out null portions of image
+    # msk[np.sum(img,axis=2)==(254*3)] = 0
+    #
+    # outfile = outfile.replace('label_crf.png', 'rgb_label_crf.png')
+    #
+    # ## write out smoothed rgb image
+    # print("Writing our RGB image to %s" % (outfile))
+    # cv2.imwrite(outfile, cv2.cvtColor(msk, cv2.COLOR_RGB2BGR) )
+    #
+    # ##===================================================
+    # ## make a matplotlib overlay plot
+    # resr = res.astype('float')
+    # del res
+    # resr[resr<1] = np.nan
+    # resr = resr-1
+    #
+    # try:
+    #    alpha_percent = config['alpha'] #0.75
+    # except:
+    #    alpha_percent = 0.5
+    #
+    # new_cols = []
+    # for col in H:
+    #     if not col.startswith('#'):
+    #         col = '#'+col
+    #     new_cols.append(col)
+    # cmap = colors.ListedColormap(new_cols)
+    #
+    # fig = plt.figure()
+    # ax1 = fig.add_subplot(111) #sp + 1)
+    # ax1.get_xaxis().set_visible(False)
+    # ax1.get_yaxis().set_visible(False)
+    #
+    # if np.ndim(img)==3:
+    #    _ = ax1.imshow(img)
+    # else:
+    #    # img = img.astype('float')
+    #    # img = np.round(255*(img/img.max()))
+    #    # img[img==0] = np.nan
+    #    _ = ax1.imshow(img)
+    #
+    # im2 = ax1.imshow(resr,
+    #                  cmap=cmap,
+    #                  alpha=alpha_percent, interpolation='nearest',
+    #                  vmin=0, vmax=len(new_cols))
+    # divider = make_axes_locatable(ax1)
+    # cax = divider.append_axes("right", size="5%")
+    # cb=plt.colorbar(im2, cax=cax)
+    # cb.set_ticks(0.5 + np.arange(len(new_cols) + 1))
+    # cb.ax.set_yticklabels(list(class_dict.keys()) , fontsize=6)
+    #
+    # #name = os.path.splitext(config['outfile'])[0].split(os.sep)[-1]
+    # class_str = '_'.join(list(class_dict.keys()))
+    #
+    # #outfile = config['image_folder'].replace('images','label_images')+os.sep+name+"_"+class_str+'_mres_merged.png'
+    #
+    # outfile = outfile.replace('merged_rgb_label_crf.png', class_str+'.png')
+    #
+    # plt.savefig(outfile,
+    #             dpi=300, bbox_inches = 'tight')
+    # del fig; plt.close()

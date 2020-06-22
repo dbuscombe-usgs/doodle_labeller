@@ -728,7 +728,7 @@ if __name__ == '__main__':
        elif type(config["apply_mask"]) is list:
           for k in config["apply_mask"]:
              to_search = glob(config['label_folder']+os.sep+'*'+k+'*label.png')
-             
+
              for f in to_search:
                 tmp, profile = OpenImage(f, None, config['num_bands'])
                 if len(np.unique(tmp))==2:
@@ -770,7 +770,7 @@ if __name__ == '__main__':
         if masks:
             use = [m for m in mask_names if \
                    m.startswith(os.path.splitext(f)[0].replace('images', 'label_images'))]
-                   
+
             for u in use:
                ind = [i for i in range(len(mask_names)) if mask_names[i]==u][0]
                o_img[masks[ind]==1] = 255
@@ -818,7 +818,7 @@ if __name__ == '__main__':
         l = np.load(l)
         nx, ny = np.shape(l)
         del l
-        apply_fact = (nx > 8000) or (ny > 8000)
+        apply_fact = (nx > 10000) or (ny > 10000)
 
         if apply_fact: #imagery is large and needs to be chunked
 
@@ -847,7 +847,7 @@ if __name__ == '__main__':
            del o, l
 
         else: #image is small enough to fit on most memory at once
-           print("Imagery is small (<8000 px in all dimensions), so not using chunks - they will be deleted")
+           print("Imagery is small (<10000 px in all dimensions), so not using chunks - they will be deleted")
            # get image file and read it in with the profile of the geotiff, if appropriate
            imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
            img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
@@ -881,7 +881,7 @@ if __name__ == '__main__':
         if masks:
             use = [m for m in mask_names if \
                    m.startswith(os.path.splitext(imfile)[0].replace('images', 'label_images'))]
-                   
+
             for u in use:
                ind = [i for i in range(len(mask_names)) if mask_names[i]==u][0]
                resr[masks[ind]==1] = 0

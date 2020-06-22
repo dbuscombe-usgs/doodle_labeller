@@ -39,11 +39,11 @@ Label images that are outputted by `doodler.py` can be merged using `merge.py`, 
 2. better use of memory
 3. smaller output file sizes
 4. masking is now specified by type/name rather than filename, allowing for merging of multiple sets of image labels that conform to a common pattern
-5. labeling still happens in chunks, but inference uses merged chunks for smaller imagery (<8000 px in all dimensions)
+5. labeling still happens in chunks, but inference uses merged chunks for smaller imagery (<10000 px in all dimensions)
 6. `doodler.py` now automatically computes the optimal CRF hyperparameters for each image chunk. I have done a lot of research into the sensitivity of results to input hyperparameters. The variation can be massive; therefore I have hard-coded some values in, implemented formulas for others, and allow the program to attempt to search for the remaining hyperparameters values. Seems to work ok in tests but please report
 7. the optimization of the hyperparameters happens on subsampled imagery (unless any image chunk dimension is less than 2000 pixels), which is faster and less memory intensive and still results in sensible outputs
 8. periods (other than to specify the file extension) are now allowed in input image file names
-9. `merge.py` will only use chunks if any image dimension is less than 2000 pixels
+9. `merge.py` will only use chunks if any image dimension is less than 10000 pixels
 10. `merge.py` now makes a semi-transparent overlay figure (like `doodler.py` does)
 
 
