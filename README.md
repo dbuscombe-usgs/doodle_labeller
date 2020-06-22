@@ -80,13 +80,12 @@ I know the brush thickness buttons doesn't change on the present tile - I am wor
 
 ### Labeling videos
 
-I made a series of videos that demonstrate how to use the software using example data provided in this repository. My commentary gives more detailed information on how to label, and how the software works
+I made a series of videos that demonstrate how to use the software using example data provided in this repository. 
 
-1. [Video 1](https://drive.google.com/file/d/1UuOWLXk7se-XsTCpKxscNA5vkGtSA8Tz/view?usp=sharing): Creating a binary mask of water / no water, using no pre-masking
-2. [Video 2](https://drive.google.com/file/d/1KGuB_DzrQUMOapllfz7j9tbaeRT9BMEO/view?usp=sharing): Creating a binary mask of vegetation / no vegetation, using pre-masking
-3. [Video 3](https://drive.google.com/file/d/1AF3rmi--bHFiryWU-sTD94ZlFnDWlxJA/view?usp=sharing): Creating a binary mask of anthropogenic classes / no anthro, using pre-masking  
-4. [Video 4](https://drive.google.com/file/d/1Il4PdvLT35IXlQg47Mq0tcs_Ff0I04iN/view?usp=sharing): Creating a multiclass label images of substrates, using pre-masking
-5. [Video 5](https://drive.google.com/file/d/1YNxE91cBBr6IRCLd2mXliyYoyMxLNbnY/view?usp=sharing): Merging multiclass label images of substrates with binary masks of water, vegetation, and anthro
+1. [Video 1](https://drive.google.com/file/d/184XUSYgHKD2QRjyR1oUnzEDfeBmKDNaK/view?usp=sharing): Creating a binary mask of water / no water, using no pre-masking (on two sample images)
+2. [Video 2](https://drive.google.com/file/d/1oiIBWeANwr23qKnJqOf6fpFUZSuQTVq4/view?usp=sharing): Creating a binary mask of vegetation / no vegetation, using pre-masking (on two sample images)
+3. [Video 3](https://drive.google.com/file/d/1TkU2cxy7sLdEPAF9cXee4Eo7VtDE9RZs/view?usp=sharing): Creating a multiclass label images of substrates, using pre-masking (on two sample images)
+4. [Video 4](https://drive.google.com/file/d/1QwKWklMF8lop0uVqWxWX1NEtvDcjAnrU/view?usp=sharing): Merging multiclass label images of substrates with binary masks of water, and vegetation (on two sample images)
 
 ### Clone the github repo
 
