@@ -315,6 +315,9 @@ Just joking - it's top to the following list ...
 * *Why is my window so small?*
 > Try using a large number for `ref_im_scale` in the config file, increasing it from the default value of 0.8 to, say, 1.0 or even 1.2
 
+To ask a different question, please use the `Issues` tab (see above) - please do not email me
+
+
 <!--
 ## compiling doodler.py
 - conda activate doodler
