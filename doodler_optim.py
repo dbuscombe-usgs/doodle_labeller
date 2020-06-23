@@ -89,7 +89,7 @@ def getCRF_optim(img, Lc, num_classes, fact):
 
     scale = 1+(10 * (np.array(img.shape).max() / 3681)) #20
 
-    prob = 0.9
+    prob = 0.6 #0.9
     compat_col = 20
     compat_spat = 3
 
@@ -130,7 +130,7 @@ def getCRF_optim(img, Lc, num_classes, fact):
        #search = [1/4,1/3,1/2,1,2,3,4]
        search = [.25,.5,1,2,4]
 
-       #R = [] #for label realization
+       R = [] #for label realization
        P = [] #for theta parameters
        K = [] #for kl-divergence statistic
 
@@ -174,11 +174,13 @@ def getCRF_optim(img, Lc, num_classes, fact):
                    Q = d.inference(n_iter)
 
                    K.append(d.klDivergence(Q))
+
+                   R.append(np.argmax(Q, axis=0).reshape((H, W)))
+                   P.append([mult_col, mult_col_compat]) #mult_spat, mult_spat_compat, mult_prob
                    del Q, d
 
-                   #R.append(np.argmax(Q, axis=0).reshape((H, W)))
-                   P.append([mult_col, mult_col_compat]) #mult_spat, mult_spat_compat, mult_prob
-
+       res = np.round(np.median(R, axis=0))
+       del R, U
 
        mult_col, mult_col_compat = P[np.argmin(K)] #mult_col_compat, mult_spat_compat, mult_prob
 
@@ -194,35 +196,35 @@ def getCRF_optim(img, Lc, num_classes, fact):
        #img = np.array(Image.fromarray(img).resize((Worig, Horig), resample=1))
        #Lc = np.array(Image.fromarray(Lc).resize((Worig, Horig), resample=1))
 
-       #common unary potentials for each class
-       U = unary_from_labels(Lc.astype('int'),
-                          num_classes + 1,
-                          gt_prob=np.min((mult_prob*prob,.999)))
-
-       # do the CRF again with optimal parameters
-       d = dcrf.DenseCRF2D(H, W, num_classes + 1)
-
-       d.setUnaryEnergy(U)
-
-       # to add the color-independent term, where features are the locations only:
-       d.addPairwiseGaussian(sxy=(int(theta_spat), int(theta_spat)), compat=compat_spat, kernel=dcrf.DIAG_KERNEL, normalization=dcrf.NORMALIZE_SYMMETRIC)
-
-       # color-dependent features
-       feats = create_pairwise_bilateral(
-                          sdims=(int(mult_col*theta_col), int(mult_col*theta_col)),
-                          schan=(scale,
-                                 scale,
-                                 scale),
-                          img=img,
-                          chdim=2)
-
-       d.addPairwiseEnergy(feats, compat=mult_col_compat*compat_col,kernel=dcrf.DIAG_KERNEL,normalization=dcrf.NORMALIZE_SYMMETRIC)
-       Q = d.inference(n_iter*2)
+       # #common unary potentials for each class
+       # U = unary_from_labels(Lc.astype('int'),
+       #                    num_classes + 1,
+       #                    gt_prob=np.min((mult_prob*prob,.999)))
+       #
+       # # do the CRF again with optimal parameters
+       # d = dcrf.DenseCRF2D(H, W, num_classes + 1)
+       #
+       # d.setUnaryEnergy(U)
+       #
+       # # to add the color-independent term, where features are the locations only:
+       # d.addPairwiseGaussian(sxy=(int(theta_spat), int(theta_spat)), compat=compat_spat, kernel=dcrf.DIAG_KERNEL, normalization=dcrf.NORMALIZE_SYMMETRIC)
+       #
+       # # color-dependent features
+       # feats = create_pairwise_bilateral(
+       #                    sdims=(int(mult_col*theta_col), int(mult_col*theta_col)),
+       #                    schan=(scale,
+       #                           scale,
+       #                           scale),
+       #                    img=img,
+       #                    chdim=2)
+       #
+       # d.addPairwiseEnergy(feats, compat=mult_col_compat*compat_col,kernel=dcrf.DIAG_KERNEL,normalization=dcrf.NORMALIZE_SYMMETRIC)
+       # Q = d.inference(n_iter*2)
 
        #kl = d.klDivergence(Q)
 
-       res = np.argmax(Q, axis=0).reshape((H, W))
-       del Q, d, U
+       # res = np.argmax(Q, axis=0).reshape((H, W))
+       #del Q, d, U
 
        if apply_fact:
           res = np.array(Image.fromarray(res.astype(np.uint8)).resize((Worig, Horig), resample=1))
@@ -893,6 +895,8 @@ if __name__ == '__main__':
 
     print("Dense labelling ... this may take a while")
 
+    thres = 5000 #10000
+
     # cycle through each image root name, stored in N
     for name in N:
         print("Working on %s" % (name))
@@ -905,7 +909,7 @@ if __name__ == '__main__':
         l = np.load(l)
         nx, ny = np.shape(l)
         del l
-        apply_fact = (nx > 10000) or (ny > 10000)
+        apply_fact = (nx > thres) or (ny > thres)
 
 
         if apply_fact: #imagery is large and needs to be chunked
@@ -941,12 +945,12 @@ if __name__ == '__main__':
 
            # assign the CRF tiles to the label image (resr) using the grid positions
            for k in range(len(ims)):
-              l = np.load(label_files[k]).astype(np.uint8)
+              l = np.load(label_files[k])#.astype(np.uint8)
               resr[l['grid_x'], l['grid_y']] =ims[k]#+1
            del ims, l
 
         else: #image is small enough to fit on most memory at once
-           print("Imagery is small (<10000 px), so not using chunks - they will be deleted")
+           print("Imagery is small (<%i px), so not using chunks - they will be deleted" % (thres))
            # get image file and read it in with the profile of the geotiff, if appropriate
            imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
            img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
@@ -957,13 +961,13 @@ if __name__ == '__main__':
                             len(config['classes']), config['fact']) # mu_col, mu_spat, prob
            #resr += 1
 
-        print("======================================")
-        print("Optimal color theta for this image: %f" % (theta_col))
-        #print("Optimal space theta for this image: %f" % (theta_spat))
-        print("Optimal color compat for this image: %f" % (compat_col))
-        #print("Optimal space compat for this image: %f" % (compat_spat))
-        #print("Optimal prior for label prob for this image: %f" % (prob))
-        print("======================================")
+        # print("======================================")
+        # print("Optimal color theta for this image: %f" % (theta_col))
+        # #print("Optimal space theta for this image: %f" % (theta_spat))
+        # print("Optimal color compat for this image: %f" % (compat_col))
+        # #print("Optimal space compat for this image: %f" % (compat_spat))
+        # #print("Optimal prior for label prob for this image: %f" % (prob))
+        # print("======================================")
 
         # if 3-band image, mask out pixels that are [254, 254, 254]
         if np.ndim(img)==3:
@@ -979,7 +983,6 @@ if __name__ == '__main__':
             for u in use:
                ind = [i for i in range(len(mask_names)) if mask_names[i]==u][0]
                resr[masks[ind]==1] = 0
-
 
         # plot the result and make label image files
         PlotAndSave(img.copy(), resr, name, config, class_str, profile)

@@ -41,11 +41,12 @@ Label images that are outputted by `doodler.py` can be merged using `merge.py`, 
 4. masking is now specified by type/name rather than filename, allowing for merging of multiple sets of image labels that conform to a common pattern
 5. config files are now easier to construct because no hard-coding of file paths, and no CRF parameter specification by default (although you can still specify the parameters)
 6. labeling still happens in chunks, but inference uses merged chunks for smaller imagery (<10000 px in all dimensions)
-7. `doodler.py` now automatically computes the optimal CRF hyperparameters for each image chunk. I have done a lot of research into the sensitivity of results to input hyperparameters. The variation can be massive; therefore I have hard-coded some values in, implemented formulas for others, and allow the program to attempt to search for the remaining hyperparameters values. Seems to work ok in tests but please report
-8. the optimization of the hyperparameters happens on subsampled imagery (unless any image chunk dimension is less than 2000 pixels), which is faster and less memory intensive and still results in sensible outputs
-9. periods (other than to specify the file extension) are now allowed in input image file names
-10. `merge.py` will only use chunks if any image dimension is less than 10000 pixels
-11. `merge.py` now makes a semi-transparent overlay figure (like `doodler.py` does)
+7. `doodler.py` now automatically computes the optimal CRF hyperparameters for each image chunk. I have done a lot of research into the sensitivity of results to input hyperparameters. The variation can be massive; therefore I have hard-coded some values in, implemented formulas for others, and allow the program to attempt to search for the remaining hyperparameters values. Seems to work ok in tests but please report - work still in progress
+8. new `doodler_optim.py` is for redoing imagery, this time with an expanded hyperparameter search. Use in an emergency (requires redoing sparse labels for the offending image/class set) - work still in progress (subject to change)
+9. the optimization of the hyperparameters happens on subsampled imagery (unless any image chunk dimension is less than 2000 pixels), which is faster and less memory intensive and still results in sensible outputs
+10. periods (other than to specify the file extension) are now allowed in input image file names
+11. `merge.py` will only use chunks if any image dimension is less than 10000 pixels
+12. `merge.py` now makes a semi-transparent overlay figure (like `doodler.py` does)
 
 
 ## How to use
@@ -80,12 +81,14 @@ I know the brush thickness buttons doesn't change on the present tile - I am wor
 
 ### Labeling videos
 
-I made a series of videos that demonstrate how to use the software using example data provided in this repository. 
+I made a series of videos that demonstrate how to use the software using example data provided in this repository.
 
-1. [Video 1](https://drive.google.com/file/d/184XUSYgHKD2QRjyR1oUnzEDfeBmKDNaK/view?usp=sharing): Creating a binary mask of water / no water, using no pre-masking (on two sample images)
-2. [Video 2](https://drive.google.com/file/d/1oiIBWeANwr23qKnJqOf6fpFUZSuQTVq4/view?usp=sharing): Creating a binary mask of vegetation / no vegetation, using pre-masking (on two sample images)
-3. [Video 3](https://drive.google.com/file/d/1TkU2cxy7sLdEPAF9cXee4Eo7VtDE9RZs/view?usp=sharing): Creating a multiclass label images of substrates, using pre-masking (on two sample images)
+1. [Video 1](https://drive.google.com/file/d/184XUSYgHKD2QRjyR1oUnzEDfeBmKDNaK/view?usp=sharing): Creating a binary mask of water / no water, using no pre-masking (on two sample images). No audio
+2. [Video 2](https://drive.google.com/file/d/1oiIBWeANwr23qKnJqOf6fpFUZSuQTVq4/view?usp=sharing): Creating a binary mask of vegetation / no vegetation, using pre-masking (on two sample images). No audio
+3. [Video 3](https://drive.google.com/file/d/1TkU2cxy7sLdEPAF9cXee4Eo7VtDE9RZs/view?usp=sharing): Creating a multiclass label images of substrates, using pre-masking (on two sample images). No audio
 4. [Video 4](https://drive.google.com/file/d/1QwKWklMF8lop0uVqWxWX1NEtvDcjAnrU/view?usp=sharing): Merging multiclass label images of substrates with binary masks of water, and vegetation (on two sample images)
+5. [Video 5](https://drive.google.com/file/d/1_z2reRdOnjdhaRworvf9J8-vIGIJt9ht/view?usp=sharing): Using `doodler_optim.py` to redo a set of class labels (on one sample image). Audio
+
 
 ### Clone the github repo
 
