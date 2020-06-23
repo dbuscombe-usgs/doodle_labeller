@@ -1,0 +1,19 @@
+{
+  "image_folder" : "data/images",
+  "label_folder": "data/label_images",
+  "max_x_steps": 2,
+  "max_y_steps": 2,
+  "ref_im_scale": 0.8,
+  "lw": 25,
+  "im_order": "RGB",
+  "alpha": 0.5,
+  "create_gtiff": "true",
+  "apply_mask": "None",
+  "num_bands": 3,
+  "medfilt": "false",
+  "fact": 1,  
+  "classes": {
+   "water": "#3b81d0",
+   "no_water": "#e35259"
+ }
+}

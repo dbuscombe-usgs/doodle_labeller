@@ -89,7 +89,8 @@ def getCRF(img, Lc, label_lines, fact):
     compat_spat = 3
 
     search = [.25,.5,1,2,4]
-
+    #search = [1/8,1/4,1/2,1,2,4,8]
+    
     if np.mean(img)<1:
        H = img.shape[0]
        W = img.shape[1]
@@ -156,13 +157,14 @@ def getCRF(img, Lc, label_lines, fact):
        if fact>1:
           res = np.array(Image.fromarray(res.astype(np.uint8)).resize((Worig, Horig), resample=1))
 
-       ## median filter to remove remaining high-freq spatial noise (radius of N pixels)
-       N = np.round(11*(Worig/(3681))).astype('int') #11 when ny=3681
-       #print("median filter size: %i" % (N))
-
-       res = median(res.astype(np.uint8), disk(N))
-
+       if config['medfilt']=="true":
+          ## median filter to remove remaining high-freq spatial noise (radius of N pixels)
+          N = np.round(11*(Worig/(3681))).astype('int') #11 when ny=3681
+          print("Applying median filter of size: %i" % (N))
+          res = median(res.astype(np.uint8), disk(N))
+          
        if len(label_lines)==2:
+           N = np.round(11*(Worig/(3681))).astype('int') #11 when ny=3681       
            res = erosion(res, disk(N))
 
     return res
@@ -681,6 +683,8 @@ if __name__ == '__main__':
     # for k in config.keys():
     #     exec(k+'=config["'+k+'"]')
 
+    ## TODO: add error checking on config item dtypes
+
     ## add defaults for missing items
     if "num_bands" not in config:
        config['num_bands'] = 3
@@ -696,7 +700,10 @@ if __name__ == '__main__':
        config['compat_col'] = 20
     if "theta_col" not in config:
        config['theta_col'] = 20
-
+    if "medfilt" not in config:
+       config['medfilt'] = "true"
+    if "thres_size_1chunk" not in config:
+       config['thres_size_1chunk'] = 10000
 
     #the program needs two classes
     if len(config['classes'])==1:
@@ -707,11 +714,15 @@ if __name__ == '__main__':
 
     class_str = '_'.join(config['classes'].keys())
 
+    ## TODO: add error checking on files items to check if files exist
+    
     files = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*.*')))
 
     N = []
     #for f in files:
     #    N.append(os.path.splitext(f)[0].split(os.sep)[-1])
+
+    ## TODO: add error checking on apply-mask items to check if files exist
 
     # masks are binary labels where the null class is zero
     masks = []
@@ -740,17 +751,8 @@ if __name__ == '__main__':
                 mask_names.append(f)
                 del tmp
 
-    # if config["apply_mask"]!='None':
-    #     try: #multiple masks first
-    #        for k in config["apply_mask"].keys():
-    #           tmp, profile = OpenImage(config["apply_mask"][k], None, config['num_bands'])
-    #           tmp = (tmp[:,:,0]==0).astype('int')
-    #           masks.append(tmp)
-    #     except:
-    #           tmp, profile = OpenImage(config["apply_mask"], None, config['num_bands'])
-    #           tmp = (tmp[:,:,0]==0).astype('int')
-    #           masks.append(tmp)
-
+    ## TODO: add error checking on apply-mask items to check if label folder is valid
+    
     ##cycle through each file in turn
     for f in files:
 
@@ -762,10 +764,6 @@ if __name__ == '__main__':
            o_img = o_img-o_img.min()
            o_img[o_img > (o_img.mean() + 2*o_img.std())] = o_img.mean()
            o_img = np.round(rescale(o_img,1.,255.)).astype(np.uint8)
-
-        #if masks:
-        #    for k in masks:
-        #        o_img[k==1] = 255
 
         if masks:
             use = [m for m in mask_names if \
@@ -786,7 +784,6 @@ if __name__ == '__main__':
         out = out.astype(np.uint8)
         nx, ny = np.shape(out)
         gridy, gridx = np.meshgrid(np.arange(ny), np.arange(nx))
-        #o_img, profile = OpenImage(f, config['im_order'], config['num_bands'])
 
         counter = 0
         for ind in Z:
@@ -813,12 +810,13 @@ if __name__ == '__main__':
         label_files = sorted(glob(config['label_folder']+os.sep+name +'*tmp*'+class_str+'.npz'))
         print("Found %i image chunks" % (len(label_files)))
 
+
         #load data to get the size
         l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
         l = np.load(l)
         nx, ny = np.shape(l)
         del l
-        apply_fact = (nx > 10000) or (ny > 10000)
+        apply_fact = (nx > config['thres_size_1chunk']) or (ny > config['thres_size_1chunk'])
 
         if apply_fact: #imagery is large and needs to be chunked
 
@@ -847,7 +845,7 @@ if __name__ == '__main__':
            del o, l
 
         else: #image is small enough to fit on most memory at once
-           print("Imagery is small (<10000 px in all dimensions), so not using chunks - they will be deleted")
+           print("Imagery is small (<%i px in all dimensions), so not using chunks - they will be deleted", (config['thres_size_1chunk']))
            # get image file and read it in with the profile of the geotiff, if appropriate
            imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
            img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])

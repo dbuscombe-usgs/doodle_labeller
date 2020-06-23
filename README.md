@@ -274,32 +274,46 @@ The required arguments are:
 * `im_order`: either "RGB" or "BGR", depending on what type of imagery you have (RGB is more common)
 * `image_folder` : ordinarily this would be "data/images" but could be a relative path to any relative directory
 * `label_folder`: see the above but for "data/label_images"
+* `ref_im_scale`: scalar to control the size of the image and label windows *Default = 0.8*
 
 and the optional arguments and their default values:
 
-* "num_bands": the number of bands in the input imagery (e.g. 1, 3, or 4). *Default = 3*
+* `num_bands`: the number of bands in the input imagery (e.g. 1, 3, or 4). *Default = 3*
 * `create_gtiff`: if "true", the program will create a geotiff label image - only appropriate if the input image is also geotiff. Otherwise, "false" *Default = false*
 * `alpha`: the degree of transparency in merged image-output plots *Default = 0.5*
 * `fact`: the factor by which to downsample by imagery. *Default = 5* (this might seem large, but trust me the CRF is very cpu and memory intensive otherwise, and the results work with a large `fact` turn out ok. Reduce to get finer resolution results by be warned, it will take a lot longer. )
 * `compat_col`: compatibility value for the color/space-dependent term in the model, initial value for search. *Default = 20*
 * `theta_col`: standard deviation value for the color/space-dependent term in the model, initial value for search. *Default = 20*
-
+* `medfilt`: whether or not to apply a median filter to smooth the results *Default = "true"*
 
 
 ## Got a bad result?
 
-Did you get a disappointing result from `doodler.py`? You could redo the labelling, this time using `doodler_optim.py`. This script works in the same way as `doodler.py` but attempts to help with problematic imagery. It performs a much wider hyperparameter search and the Kullback-Leibler (KL) divergence for each realization is computed. The minimum KL-divergence is returned as the "optimal" result. It often results in fairly coarse resolution labelling relative to `doodler.py` but tends tp maximize the accuracy of the main segments in the image.
+Did you get a disappointing result from `doodler.py`? You could redo the labelling, this time using `doodler_optim.py`. This script works in the same way as `doodler.py` but attempts to help with problematic imagery. It performs a much wider hyperparameter search 
 
-Why redo the labelling? You'll be more careful this time :)
+<!--
+and the Kullback-Leibler (KL) divergence for each realization is computed. The minimum KL-divergence is returned as the "optimal" result. It often results in fairly coarse resolution labelling relative to `doodler.py` but tends tp maximize the accuracy of the main segments in the image.-->
+
+Why redo the labelling? You'll be more careful this time :) 
+
+Just joking - it's top to the following list ...
 
 
 ## Improvements coming soon
+* pass annotations to `doodler_optim.py` (and also `doodler.py`) instead of having to redo annotations
 * fix the line width issue on the current image tile
 * compiled executables
 * lookup table for consistent hex colours for common classes
 * config file generator (need a GUI?)
 * move labelling window to different screen option?
 
+## FAQS
+
+* *Why are my results poor?*
+> Some things to check: 1) the default 'fact' is set quite high to deal with really large imagery and/or small computer RAM (<< 16 GB) and/or large imagery (>8,000 pixels in any dimension). If your system can handle it (it probably can), set the number low in the config file e.g. `'fact': 2,` for a downsize factor of 2, and `'fact': 1,` for no downsizing. 2) did you run `doodler_optim.py`? 3) Increase one or both of the CRF parameters in the config file, e.g. change from the default `'compat_col': 20,` and/or `'theta_col': 20,` to something like `'compat_col': 40,` and/or `'theta_col': 40,`
+
+* *Why is my window so small?*
+> Try using a large number for `ref_im_scale` in the config file, increasing it from the default value of 0.8 to, say, 1.0 or even 1.2
 
 <!--
 ## compiling doodler.py

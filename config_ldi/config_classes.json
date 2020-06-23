@@ -1,0 +1,24 @@
+{
+  "image_folder" : "data/images",
+  "label_folder": "data/label_images",
+  "max_x_steps": 4,
+  "max_y_steps": 4,
+  "ref_im_scale": 0.8,
+  "lw": 5,
+  "im_order": "RGB",
+  "alpha": 0.5,
+  "num_bands": 3,
+  "create_gtiff": "true",
+  "medfilt": "false",
+  "fact": 1,
+  "apply_mask": "None",
+  "classes": {
+   "sand": "#c0d03b",
+   "submerged_sand": "#807449", 
+   "water": "#3b81d0",   
+   "dune_veg": "#1add9c", 
+   "marsh": "#094b35",
+   "other_veg": "#428b73",
+   "anthro": "#ea3d0a"
+   }
+}

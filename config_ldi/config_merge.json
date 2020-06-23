@@ -1,0 +1,27 @@
+{
+  "image_folder" : "data/images",
+  "label_folder": "data/label_images",
+  "im_order": "RGB",
+  "alpha": 0.5,
+  "num_bands": 3,
+  "create_gtiff": "true",
+
+  "to_merge": ["water","sand"],
+
+  "classesA":
+  {
+   "water": "#3b81d0",
+   "no_water": "#e35259"
+  },
+
+  "classesB":
+  {
+   "sand": "#c0d03b",
+   "submerged_sand": "#807449", 
+   "water": "#3b81d0",   
+   "dune_veg": "#1add9c", 
+   "marsh": "#094b35",
+   "other_veg": "#428b73",
+   "anthro": "#ea3d0a"
+   }
+}

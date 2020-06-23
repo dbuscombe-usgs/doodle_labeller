@@ -83,14 +83,14 @@ def getCRF_optim(img, Lc, num_classes, fact):
     """
 
     # initial parameters
-    theta_col = 20
+    theta_col = config["theta_col"] ##20
     theta_spat = 3
     n_iter = 10
 
     scale = 1+(10 * (np.array(img.shape).max() / 3681)) #20
 
     prob = 0.6 #0.9
-    compat_col = 20
+    compat_col = config["theta_col"] ##20
     compat_spat = 3
 
     #if the image or label is empty ...
@@ -127,8 +127,8 @@ def getCRF_optim(img, Lc, num_classes, fact):
        W = img.shape[1]
 
        # define some factors to apply to the nominal thetas and mus
-       #search = [1/4,1/3,1/2,1,2,3,4]
-       search = [.25,.5,1,2,4]
+       search = [1/4,1/3,1/2,1,2,3,4]
+       #search = [.25,.5,1,2,4]
 
        R = [] #for label realization
        P = [] #for theta parameters
@@ -797,7 +797,15 @@ if __name__ == '__main__':
        config['apply_mask'] = None
     if "fact" not in config:
        config['fact'] = 5
-
+    if "medfilt" not in config:
+       config['medfilt'] = "true"
+    if "compat_col" not in config:
+       config['compat_col'] = 20
+    if "theta_col" not in config:
+       config['theta_col'] = 20
+    if "thres_size_1chunk" not in config:
+       config['thres_size_1chunk'] = 10000
+                     
     # for k in config.keys():
     #     exec(k+'=config["'+k+'"]')
 
@@ -895,8 +903,6 @@ if __name__ == '__main__':
 
     print("Dense labelling ... this may take a while")
 
-    thres = 5000 #10000
-
     # cycle through each image root name, stored in N
     for name in N:
         print("Working on %s" % (name))
@@ -909,7 +915,7 @@ if __name__ == '__main__':
         l = np.load(l)
         nx, ny = np.shape(l)
         del l
-        apply_fact = (nx > thres) or (ny > thres)
+        apply_fact = (nx > config['thres_size_1chunk']) or (ny > config['thres_size_1chunk'])
 
 
         if apply_fact: #imagery is large and needs to be chunked
@@ -950,7 +956,7 @@ if __name__ == '__main__':
            del ims, l
 
         else: #image is small enough to fit on most memory at once
-           print("Imagery is small (<%i px), so not using chunks - they will be deleted" % (thres))
+           print("Imagery is small (<%i px), so not using chunks - they will be deleted" % (config['thres_size_1chunk']))
            # get image file and read it in with the profile of the geotiff, if appropriate
            imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
            img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
