@@ -51,6 +51,12 @@ Label images that are outputted by `doodler.py` can be merged using `merge.py`, 
 
 ## How to use
 
+1. Put a single image or multiple images in the "data/images" folder
+
+2. (optionally) Clear the contents of the "data/label_images" folder
+
+3. make 'sparse' annotations on the imagery with a mouse or stylus, and use keyboard keys to advance through classes
+
 This is python software that is designed to be used from within a `conda` environment. After setting up that environment, the user places imagery in a folder and creates a `config` file that tells the program where the imagery is and what classes will be labeled. The minimum number of classes is 2. There is no limit to the maximum number of classes.
 
 This tool can be used in a few different ways, including:
@@ -314,6 +320,10 @@ Just joking - it's top to the following list ...
 
 * *Why is my window so small?*
 > Try using a large number for `ref_im_scale` in the config file, increasing it from the default value of 0.8 to, say, 1.0 or even 1.2
+
+* *What to I do with a `json.decoder.JSONDecodeError`?*
+> This relates to the config file. You either have a comma at the end of a list (bounded by `{...}`) where it shouldn't be, or you have a variable outside of `"..."`
+
 
 To ask a different question, please use the `Issues` tab (see above) - please do not email me
 

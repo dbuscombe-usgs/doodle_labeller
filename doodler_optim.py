@@ -102,7 +102,9 @@ def getCRF_optim(img, Lc, num_classes, fact):
 
     else:
 
-       apply_fact = (img.shape[0] > 1000) or (img.shape[1] > 1000)
+       thres = int(config['thres_size_1chunk']/2)
+       
+       apply_fact = (img.shape[0] > thres) or (img.shape[1] > thres)
        #print("apply_fact: %i" % (apply_fact))
 
        # if image is 2D, make it 3D by stacking bands
@@ -131,8 +133,8 @@ def getCRF_optim(img, Lc, num_classes, fact):
        #search = [.25,.5,1,2,4]
 
        R = [] #for label realization
-       P = [] #for theta parameters
-       K = [] #for kl-divergence statistic
+       #P = [] #for theta parameters
+       #K = [] #for kl-divergence statistic
 
        mult_spat = 1
 
@@ -173,16 +175,16 @@ def getCRF_optim(img, Lc, num_classes, fact):
                    #do inference
                    Q = d.inference(n_iter)
 
-                   K.append(d.klDivergence(Q))
+                   #K.append(d.klDivergence(Q))
 
                    R.append(np.argmax(Q, axis=0).reshape((H, W)))
-                   P.append([mult_col, mult_col_compat]) #mult_spat, mult_spat_compat, mult_prob
+                   #P.append([mult_col, mult_col_compat]) #mult_spat, mult_spat_compat, mult_prob
                    del Q, d
 
        res = np.round(np.median(R, axis=0))
        del R, U
 
-       mult_col, mult_col_compat = P[np.argmin(K)] #mult_col_compat, mult_spat_compat, mult_prob
+       #mult_col, mult_col_compat = P[np.argmin(K)] #mult_col_compat, mult_spat_compat, mult_prob
 
        # print("================================")
        # print("Optimal color theta hyperparameter: %f" % (mult_col*theta_col))

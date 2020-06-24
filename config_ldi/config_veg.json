@@ -13,16 +13,9 @@
   "fact": 2,
   "apply_mask": "None",
   "classes": {
-   "water": "#2f36aa",     
-   "anthro": "#aa352f",
-   "vegetation": "#2faa58",
-   "mud": "#aa8b2f",
-   "sand": "#a0aa2f",
-   "submerged_sediment": "#84aa2f", 
-   "gravel": "#186074", 
-   "boulder": "#4f7373",
-   "wrack_peat": "#aa2f9c",
-   "snow_ice": "#aa2f69",
-   "shell": "#84b1b4"
+   "herb": "#81ac8f",
+   "woody": "#4aad6b",
+   "marsh": "#145028",
+   "bare": "#8d938f"    
    }
 }

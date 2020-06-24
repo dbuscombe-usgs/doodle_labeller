@@ -343,6 +343,7 @@ def ReadGeotiff(image_path, rgb):
     """
     with rasterio.open(image_path) as src:
         layer = src.read()
+        profile = src.profile
 
     if layer.shape[0] == 3:
         r, g, b = layer
@@ -365,7 +366,7 @@ def ReadGeotiff(image_path, rgb):
 
     img[img[:,:,2] == 255] = 254
 
-    return img
+    return img, profile
 
 #===============================================================
 def WriteGeotiff(image_path, lab, profile):
@@ -443,7 +444,21 @@ if __name__ == '__main__':
     elif type(config["to_merge"]) is list:
        for k in config["to_merge"]:
           to_search = glob(config['label_folder']+os.sep+'*'+k+'*label.png')
-          to_merge.append(to_search)
+          if len(to_search)==len(config["to_merge"]):
+             to_search = [s for s in to_search if 'no_' in s]
+          print(to_search)
+          to_merge.append(to_search) 
+          #for i in to_search:
+          #   if 'no_'+k in i:
+          #      print("adding %s" % (i))
+          #      to_merge.append(i)
+          #   else:
+          #      to_search = [s for s in to_search if 'no_' not in s]
+          #      to_merge.append(to_search)                
+
+
+    #to_merge = list(set(list(itertools.chain(*to_merge))))
+       
 
     ##to_merge is a list of list. nested lists are per class, not per site
     to_merge = [sorted(m) for m in to_merge]
@@ -465,12 +480,12 @@ if __name__ == '__main__':
           if c in name:
              all_stripped_names.append(name.split(c)[0])
 
-    all_stripped_names = np.unique(all_stripped_names)
-
-
     to_merge_per_set = []
     for k in all_stripped_names:
        to_merge_per_set.append([n for n in all_names if n.startswith(k)])
+       if len(to_merge_per_set[0])==len(config['to_merge']):
+          break
+
 
     #=======================================================================
     #=========================DO =========================
