@@ -10,12 +10,15 @@
 # > USGS Pacific Marine Science Center
 #
 import os, json, csv, itertools
-import sys, getopt
+import sys, getopt, gc
 import cv2
 import numpy as np
 from glob import glob
 import rasterio
 from PIL import Image
+
+##  progress bar (bcause te quiero demasiado ...)
+from tqdm import tqdm
 
 import pydensecrf.densecrf as dcrf
 from pydensecrf.utils import create_pairwise_bilateral, unary_from_labels
@@ -96,7 +99,7 @@ def getCRF(img, Lc, label_lines, fact):
        R = []
 
        ## loop through the 'theta' values (half, given, and double)
-       for mult in search:
+       for mult in tqdm(search):
           d = dcrf.DenseCRF2D(H, W, len(label_lines) + 1)
           d.setUnaryEnergy(U)
 
@@ -120,14 +123,15 @@ def getCRF(img, Lc, label_lines, fact):
                         normalization=dcrf.NORMALIZE_SYMMETRIC)
           Q = d.inference(n_iter)
           #print("KL-divergence at {}: {}".format(i, d.klDivergence(Q)))
-          R.append(1+np.argmax(Q, axis=0).reshape((H, W)))
+          R.append(1+np.argmax(Q, axis=0).reshape((H, W)).astype(np.uint8))
           del Q
 
        res = np.round(np.median(R, axis=0))
        del R
 
        if fact>1:
-          res = np.array(Image.fromarray(res.astype(np.uint8)).resize((Worig, Horig), resample=1))
+          res = np.array(Image.fromarray(res.astype(np.uint8)).resize((Worig, Horig), 
+                resample=1))
 
        ## median filter to remove remaining high-freq spatial noise (radius of N pixels)
        N = np.round(11*(Worig/(3681))).astype('int') #11 when ny=3681
@@ -240,7 +244,8 @@ def flatten_labels(msk, cols):
     M = []
     for k in range(len(cols)):
        col = list(cols[k])
-       msk_flat = ((msk[:,:,0]==col[0])==1) & ((msk[:,:,1]==col[1])==1) & ((msk[:,:,2]==col[2])==1)
+       msk_flat = ((msk[:,:,0]==col[0])==1) & ((msk[:,:,1]==col[1])==1) & \
+                  ((msk[:,:,2]==col[2])==1)
        msk_flat = (msk_flat).astype(np.uint8)
        M.append(msk_flat)
        del msk_flat
@@ -416,6 +421,10 @@ if __name__ == '__main__':
     with open(os.getcwd()+os.sep+configfile) as f:
         config = json.load(f)
 
+    if "name" not in config:
+       print("Variable 'name' not in config file ... exiting")
+       sys.exit(2)
+
     ## add defaults for missing items
     if "num_bands" not in config:
        config['num_bands'] = 3
@@ -439,26 +448,15 @@ if __name__ == '__main__':
     ## list of label images to combine
     to_merge = []
     if type(config["to_merge"]) is str:
-       to_search = glob(config['label_folder']+os.sep+'*'+config["apply_mask"]+'*_label.png')
+       to_search = glob(config['label_folder']+os.sep+'*'+\
+                   config["apply_mask"]+'*_label.png')
        to_merge.append(to_search)
     elif type(config["to_merge"]) is list:
        for k in config["to_merge"]:
           to_search = glob(config['label_folder']+os.sep+'*'+k+'*label.png')
-          if len(to_search)==len(config["to_merge"]):
-             to_search = [s for s in to_search if 'no_' in s]
-          print(to_search)
-          to_merge.append(to_search) 
-          #for i in to_search:
-          #   if 'no_'+k in i:
-          #      print("adding %s" % (i))
-          #      to_merge.append(i)
-          #   else:
-          #      to_search = [s for s in to_search if 'no_' not in s]
-          #      to_merge.append(to_search)                
-
-
-    #to_merge = list(set(list(itertools.chain(*to_merge))))
-       
+          to_search = [s for s in to_search if s.startswith(config['label_folder']+\
+                       os.sep+config['name'])]
+          to_merge.append(to_search)
 
     ##to_merge is a list of list. nested lists are per class, not per site
     to_merge = [sorted(m) for m in to_merge]
@@ -472,7 +470,8 @@ if __name__ == '__main__':
 
     class_str = ['_'.join(config[cc].keys()) for cc in class_sets]
 
-    all_names = [os.path.splitext(n)[0].split(os.sep)[-1] for n in list(itertools.chain(*to_merge)) ]
+    all_names = [os.path.splitext(n)[0].split(os.sep)[-1] \
+                 for n in list(itertools.chain(*to_merge)) ]
 
     all_stripped_names = []
     for name in all_names:
@@ -502,7 +501,8 @@ if __name__ == '__main__':
        class_dict = {}
        H = []
 
-       msk, classes_names, rgb, classes_colors, _ = merge_labels(msk, cv2.imread(config['label_folder']+os.sep+this_set[0]+'.png'), config[class_sets[0]])
+       msk, classes_names, rgb, classes_colors, _ = merge_labels(msk, \
+                 cv2.imread(config['label_folder']+os.sep+this_set[0]+'.png'), config[class_sets[0]])
 
        ##update dictionary
        for c,r,h in zip(classes_names, rgb, classes_colors):
@@ -511,7 +511,8 @@ if __name__ == '__main__':
 
        xcounter = 1
        for ii,cc in zip(this_set[1:], class_sets[1:]):
-          msk, classes_names, rgb, classes_colors, _ = merge_labels(msk, cv2.imread(config['label_folder']+os.sep+ii+'.png'), config[cc])
+          msk, classes_names, rgb, classes_colors, _ = \
+                  merge_labels(msk, cv2.imread(config['label_folder']+os.sep+ii+'.png'), config[cc])
           for c,r,h in zip(classes_names, rgb, classes_colors):
              class_dict[c] = r
              H.append(h)
@@ -521,7 +522,8 @@ if __name__ == '__main__':
        for cc in class_str:
           class_str2+=cc
 
-       outfile = config['label_folder']+os.sep+all_stripped_names[counter]+class_str2+'_rgb.csv'
+       outfile = config['label_folder']+os.sep+all_stripped_names[counter]+\
+                 class_str2+'_rgb.csv'
 
        ##write class dict to csv file
        with open(outfile, 'w') as f:
@@ -530,7 +532,8 @@ if __name__ == '__main__':
              f.write("%s,%s\n" % (key, str(class_dict[key]).replace(')','').replace('(','')) )
 
        print("Writing our RGB image to %s" % (outfile))
-       cv2.imwrite(outfile.replace('_rgb.csv','_label_rgb.png'), cv2.cvtColor(msk , cv2.COLOR_RGB2BGR) )
+       cv2.imwrite(outfile.replace('_rgb.csv','_label_rgb.png'), 
+                   cv2.cvtColor(msk , cv2.COLOR_RGB2BGR) )
 
 
        ##get rgb colors
@@ -542,7 +545,8 @@ if __name__ == '__main__':
 
        ##===================================================
 
-       imfile = glob(config['image_folder']+os.sep+all_stripped_names[counter][:-1]+'*.*')[0]
+       imfile = glob(config['image_folder']+os.sep+\
+                all_stripped_names[counter][:-1]+'*.*')[0]
        ##read image
        img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
 
@@ -578,9 +582,9 @@ if __name__ == '__main__':
              ssy = int(overlap*sy)
 
              ##gets small overlapped image windows
-             Z, indZ = sliding_window(img, (sx, sy, nz), (ssx, ssy, nz))
+             Z, _ = sliding_window(img, (sx, sy, nz), (ssx, ssy, nz))
              ##gets small overlapped label windows
-             L, indL = sliding_window(msk_flat, (sx, sy), (ssx, ssy))
+             L, _ = sliding_window(msk_flat, (sx, sy), (ssx, ssy))
              del msk_flat
 
              print("working on %i chunks, each %i x %i pixels" % (len(Z), sx, sy))
@@ -626,6 +630,8 @@ if __name__ == '__main__':
              res = getCRF(img, msk_flat+1, class_dict, config['fact'])-1
              del msk_flat
 
+       gc.collect()
+
        ##===================================================
        ## replace large with most populous value
        res = res.astype(np.uint8)
@@ -643,7 +649,8 @@ if __name__ == '__main__':
        if config['create_gtiff']=='true':
           image_path = outfile.replace('.png','.tif')
 
-          WriteGeotiff(image_path, np.round(255*(res/len(class_dict) )).astype('uint8'), profile)
+          WriteGeotiff(image_path, np.round(255*(res/len(class_dict) )).astype('uint8'), 
+                       profile)
 
        ## allocate empty 3D array of same x-y dimensions
        msk = np.zeros((res.shape)+(3,), dtype=np.uint8)
@@ -711,7 +718,7 @@ if __name__ == '__main__':
        del img, resr
 
        counter += 1
-
+       gc.collect()
 
 
 

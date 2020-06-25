@@ -13,12 +13,15 @@
 # > Incorporating some of the code contribution from LCDR Brodie Wells, Naval Postgraduate school Monterey
 
 import subprocess, ctypes
-import os, json
+import os, json, gc
 import sys, getopt
 import cv2
 import numpy as np
 from glob import glob
 import rasterio, tifffile
+
+##  progress bar (bcause te quiero demasiado ...)
+from tqdm import tqdm
 
 import pydensecrf.densecrf as dcrf
 from pydensecrf.utils import create_pairwise_bilateral, unary_from_labels
@@ -90,7 +93,7 @@ def getCRF(img, Lc, label_lines, fact):
 
     search = [.25,.5,1,2,4]
     #search = [1/8,1/4,1/2,1,2,4,8]
-    
+
     if np.mean(img)<1:
        H = img.shape[0]
        W = img.shape[1]
@@ -124,7 +127,7 @@ def getCRF(img, Lc, label_lines, fact):
        R = []
 
        ## loop through the 'theta' values (half, given, and double)
-       for mult in search:
+       for mult in tqdm(search):
           d = dcrf.DenseCRF2D(H, W, len(label_lines) + 1)
           d.setUnaryEnergy(U)
 
@@ -148,23 +151,24 @@ def getCRF(img, Lc, label_lines, fact):
                         normalization=dcrf.NORMALIZE_SYMMETRIC)
           Q = d.inference(n_iter)
           #print("KL-divergence at {}: {}".format(i, d.klDivergence(Q)))
-          R.append(1+np.argmax(Q, axis=0).reshape((H, W)))
+          R.append(1+np.argmax(Q, axis=0).reshape((H, W)).astype(np.uint8))
           del Q
 
        res = np.round(np.median(R, axis=0))
        del R
 
        if fact>1:
-          res = np.array(Image.fromarray(res.astype(np.uint8)).resize((Worig, Horig), resample=1))
+          res = np.array(Image.fromarray(res.astype(np.uint8)).resize((Worig, Horig),
+                resample=1))
 
        if config['medfilt']=="true":
           ## median filter to remove remaining high-freq spatial noise (radius of N pixels)
           N = np.round(11*(Worig/(3681))).astype('int') #11 when ny=3681
           print("Applying median filter of size: %i" % (N))
           res = median(res.astype(np.uint8), disk(N))
-          
+
        if len(label_lines)==2:
-           N = np.round(11*(Worig/(3681))).astype('int') #11 when ny=3681       
+           N = np.round(11*(Worig/(3681))).astype('int') #11 when ny=3681
            res = erosion(res, disk(N))
 
     return res
@@ -284,6 +288,7 @@ class MaskPainter():
         print("Cycle classes with [ESC] key")
         print("Go back a frame with [b] key")
         print("Skip a frame with [s] key")
+        print("Undo the current annotation with [z] key")
 
         self.draw = False  # True if mouse is pressed
         self.Z = self.MakeWindows()
@@ -664,22 +669,31 @@ if __name__ == '__main__':
 
     argv = sys.argv[1:]
     try:
-        opts, args = getopt.getopt(argv,"h:c:")
+        opts, args = getopt.getopt(argv,"h:c:f:")
     except getopt.GetoptError:
-        print('python doodler.py -c configfile.json')
+        print('python doodler.py -c configfile.json [-f npy_file.npy]')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print('Example usage: python doodler.py -c config.json')
+            print('Example usage: python doodler.py -c \
+                   path/to/config.json [-f path/to/npy_file.npy] ')
             sys.exit()
         elif opt in ("-c"):
             configfile = arg
+        elif opt in ("-f"):
+            npy_file = arg
+
+    # if no npy file is given to the program, set to None
+    if 'npy_file' not in locals():
+        npy_file = None
+    else:
+        doodles = np.load(npy_file)
 
     #configfile = 'config.json'
     # load the user configs
     with open(os.getcwd()+os.sep+configfile) as f:
         config = json.load(f)
-
+        
     # for k in config.keys():
     #     exec(k+'=config["'+k+'"]')
 
@@ -708,19 +722,21 @@ if __name__ == '__main__':
     #the program needs two classes
     if len(config['classes'])==1:
        print(
-       "You must have a minimum of 2 classes, i.e. 1) object of interest and 2) background ... program exiting"
+       "You must have a minimum of 2 classes, i.e. 1) object of interest \
+       and 2) background ... program exiting"
        )
        sys.exist(2)
 
     class_str = '_'.join(config['classes'].keys())
 
     ## TODO: add error checking on files items to check if files exist
-    
+
     files = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*.*')))
 
     N = []
-    #for f in files:
-    #    N.append(os.path.splitext(f)[0].split(os.sep)[-1])
+    if 'doodles' in locals():
+       for f in files:
+          N.append(os.path.splitext(f)[0].split(os.sep)[-1])
 
     ## TODO: add error checking on apply-mask items to check if files exist
 
@@ -729,7 +745,8 @@ if __name__ == '__main__':
     mask_names = []
     if config["apply_mask"]!='None':
        if type(config["apply_mask"]) is str:
-          to_search = glob(config['label_folder']+os.sep+'*'+config["apply_mask"]+'*label.png')
+          to_search = glob(config['label_folder']+os.sep+'*'+\
+                      config["apply_mask"]+'*label.png')
           for f in to_search:
              tmp, profile = OpenImage(f, None, config['num_bands'])
              tmp = (tmp[:,:,0]==0).astype('uint8')
@@ -752,129 +769,148 @@ if __name__ == '__main__':
                 del tmp
 
     ## TODO: add error checking on apply-mask items to check if label folder is valid
-    
-    ##cycle through each file in turn
-    for f in files:
 
-        screen_size = Screen()
-        o_img, profile = OpenImage(f, config['im_order'], config['num_bands'])
+    if 'doodles' not in locals(): #make annotations
 
-        if np.std(o_img[o_img>0]) < 10:
-           o_img[o_img==0] = np.min(o_img[o_img>0])
-           o_img = o_img-o_img.min()
-           o_img[o_img > (o_img.mean() + 2*o_img.std())] = o_img.mean()
-           o_img = np.round(rescale(o_img,1.,255.)).astype(np.uint8)
+       ##cycle through each file in turn
+       for f in tqdm(files):
 
-        if masks:
-            use = [m for m in mask_names if \
+          screen_size = Screen()
+          o_img, profile = OpenImage(f, config['im_order'], config['num_bands'])
+
+          if np.std(o_img[o_img>0]) < 10:
+              o_img[o_img==0] = np.min(o_img[o_img>0])
+              o_img = o_img-o_img.min()
+              o_img[o_img > (o_img.mean() + 2*o_img.std())] = o_img.mean()
+              o_img = np.round(rescale(o_img,1.,255.)).astype(np.uint8)
+
+          if masks:
+              use = [m for m in mask_names if \
                    m.startswith(os.path.splitext(f)[0].replace('images', 'label_images'))]
 
-            for u in use:
-               ind = [i for i in range(len(mask_names)) if mask_names[i]==u][0]
-               o_img[masks[ind]==1] = 255
+              for u in use:
+                 ind = [i for i in range(len(mask_names)) if mask_names[i]==u][0]
+                 o_img[masks[ind]==1] = 255
 
 
-        ##name = f.split(os.sep)[-1].split('.')[0] #assume no dots in file name
-        name = os.path.splitext(f)[0].split(os.sep)[-1]
-        N.append(name)
+          ##name = f.split(os.sep)[-1].split('.')[0] #assume no dots in file name
+          name = os.path.splitext(f)[0].split(os.sep)[-1]
+          N.append(name)
 
-        mp = MaskPainter(o_img.copy(), config, screen_size)
-        out, Z = mp.LabelWindow()
+          mp = MaskPainter(o_img.copy(), config, screen_size)
+          out, Z = mp.LabelWindow()
 
-        out = out.astype(np.uint8)
-        nx, ny = np.shape(out)
-        gridy, gridx = np.meshgrid(np.arange(ny), np.arange(nx))
+          out = out.astype(np.uint8)
+          nx, ny = np.shape(out)
+          gridy, gridx = np.meshgrid(np.arange(ny), np.arange(nx))
 
-        counter = 0
-        for ind in Z:
-           np.savez(config['label_folder']+os.sep+name+"_tmp"+str(counter)+"_"+class_str+".npz",
+          counter = 0
+          for ind in Z:
+             np.savez(config['label_folder']+os.sep+name+"_tmp"+str(counter)+"_"+class_str+".npz",
                     label=out[ind[0]:ind[1], ind[2]:ind[3]],
                     image=o_img[ind[0]:ind[1], ind[2]:ind[3]],
                     grid_x=gridx[ind[0]:ind[1], ind[2]:ind[3]],
                     grid_y=gridy[ind[0]:ind[1], ind[2]:ind[3]])
-           counter += 1
+             counter += 1
 
-        del Z, gridx, gridy, o_img
-        outfile = config['label_folder']+os.sep+name+"_"+class_str+".npy"
-        np.save(outfile, out)
-        print("annotations saved to %s" % (outfile))
-        del out
+          del Z, gridx, gridy, o_img
+          outfile = config['label_folder']+os.sep+name+"_"+class_str+".npy"
+          np.save(outfile, out)
+          print("annotations saved to %s" % (outfile))
+          del out
 
-    print("Sparse labelling complete ...")
+       print("Sparse labelling complete ...")
+    else:
+       print("Using provided labels ...")
+
+    gc.collect()
     print("Dense labelling ... this may take a while")
 
     # cycle through each image root name, stored in N
     for name in N:
         print("Working on %s" % (name))
-        # get a list of the temporary npz files
-        label_files = sorted(glob(config['label_folder']+os.sep+name +'*tmp*'+class_str+'.npz'))
-        print("Found %i image chunks" % (len(label_files)))
 
+        if 'doodles' not in locals(): #make annotations
 
-        #load data to get the size
-        l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
-        l = np.load(l)
-        nx, ny = np.shape(l)
-        del l
-        apply_fact = (nx > config['thres_size_1chunk']) or (ny > config['thres_size_1chunk'])
+           # get a list of the temporary npz files
+           label_files = sorted(glob(config['label_folder']+os.sep+name +'*tmp*'+\
+                         class_str+'.npz'))
+           print("Found %i image chunks" % (len(label_files)))
 
-        if apply_fact: #imagery is large and needs to be chunked
-
-           # in parallel, get the CRF prediction for each tile
-           # use all but 1 core (njobs=-2) and use pre_dispatch and max_nbytes to control memory usage
-           o = Parallel(n_jobs = -2, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=1e6)\
-                       (delayed(DoCrf)(label_files[k], config, name) for k in range(len(label_files)))
-
-           # load the npy file and get the grid coordinates to assign elements of 'ims' below
-           l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
+           #load data to get the size
+           l = sorted(glob(config['label_folder']+os.sep+name +'*'+\
+               class_str+'.npy'))[0]
            l = np.load(l)
            nx, ny = np.shape(l)
            del l
+           apply_fact = (nx > config['thres_size_1chunk']) or \
+                     (ny > config['thres_size_1chunk'])
+
+           if apply_fact: #imagery is large and needs to be chunked
+
+              # in parallel, get the CRF prediction for each tile
+              # use all but 1 core (njobs=-2) and use pre_dispatch and max_nbytes to control memory usage
+              o = Parallel(n_jobs = -2, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=1e6)\
+                       (delayed(DoCrf)(label_files[k], config, name) for k in range(len(label_files)))
+
+              # load the npy file and get the grid coordinates to assign elements of 'ims' below
+              l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
+              l = np.load(l)
+              nx, ny = np.shape(l)
+              del l
+
+              # get image file and read it in with the profile of the geotiff, if appropriate
+              imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
+              img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
+
+              # allocate an empty label image
+              resr = np.zeros((nx, ny))
+
+              # assign the CRF tiles to the label image (resr) using the grid positions
+              for k in range(len(o)):
+                 l = np.load(label_files[k])
+                 resr[l['grid_x'], l['grid_y']] =o[k]#+1
+              del o, l
+
+           else: #image is small enough to fit on most memory at once
+              print("Imagery is small (<%i px in all dimensions), so not using chunks - they will be deleted", (config['thres_size_1chunk']))
+              # get image file and read it in with the profile of the geotiff, if appropriate
+              imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
+              img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
+              l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
+              l = np.load(l).astype(np.uint8)
+
+              resr = getCRF(img,l,config['classes'], config['fact'])
+              #resr += 1
+              del l
+
+        else: #labels provided
+           print("computing CRF using provided annotations")
+
+           #nx, ny = np.shape(doodles)
+           ## memory management
+           #if np.max((nx, ny))>2000:
+           #    config['fact'] = np.max((config['fact'], 3))
 
            # get image file and read it in with the profile of the geotiff, if appropriate
-           imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
+           imfile = sorted(glob(os.path.normpath(config['image_folder']+\
+                       os.sep+'*'+name+'*.*')))[0]
            img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
 
-           # allocate an empty label image
-           resr = np.zeros((nx, ny))
+           resr = getCRF(img,doodles.astype(np.uint8),
+                            config['classes'], config['fact']) # mu_col, mu_spat, prob
 
-           # assign the CRF tiles to the label image (resr) using the grid positions
-           for k in range(len(o)):
-              l = np.load(label_files[k])
-              resr[l['grid_x'], l['grid_y']] =o[k]#+1
-           del o, l
 
-        else: #image is small enough to fit on most memory at once
-           print("Imagery is small (<%i px in all dimensions), so not using chunks - they will be deleted", (config['thres_size_1chunk']))
-           # get image file and read it in with the profile of the geotiff, if appropriate
-           imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
-           img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
-           l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
-           l = np.load(l).astype(np.uint8)
-
-           resr = getCRF(img,l,config['classes'], config['fact'])
-           #resr += 1
-           del l
+        gc.collect()
 
         # if 3-band image, mask out pixels that are [254, 254, 254]
         if np.ndim(img)==3:
            resr[np.sum(img,axis=2)==(254*3)] = 0
+           resr[np.sum(img,axis=2)==0] = 0
+           resr[np.sum(img,axis=2)==(255*3)] = 0
         elif np.ndim(img)==2: #2-band image
            resr[img==0] = 0 #zero out image pixels that are 0 and 255
            resr[img==255] = 0
-
-        # mask out null values in mask files
-        #if masks:
-        #   for k in masks:
-        #      ##k==1 is the mask
-        #      resr[k==1] = 0 #0=null category
-        #   del k
-
-        #if masks:
-        #    use = [m for m in mask_names if \
-        #           m.startswith(os.path.splitext(imfile)[0].replace('images', 'label_images'))][0]
-        #    ind = [i for i in range(len(mask_names)) if mask_names[i]==use][0]
-        #    resr[masks[ind]==1] = 255
 
         if masks:
             use = [m for m in mask_names if \

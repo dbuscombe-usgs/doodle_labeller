@@ -33,29 +33,15 @@ Label images that are outputted by `doodler.py` can be merged using `merge.py`, 
 * label image: an image where each pixel has been labeled with a class (either manually or automatically - in this program, the label image is generated automatically using a machine learning algorithm called a CRF)
 * binary label image: a label image of 2 classes (the class of interest and everything else)
 
-## Updates since last version (twelfty)
-
-1. CRF inference is now faster and hopefully more robust
-2. better use of memory
-3. smaller output file sizes
-4. masking is now specified by type/name rather than filename, allowing for merging of multiple sets of image labels that conform to a common pattern
-5. config files are now easier to construct because no hard-coding of file paths, and no CRF parameter specification by default (although you can still specify the parameters)
-6. labeling still happens in chunks, but inference uses merged chunks for smaller imagery (<10000 px in all dimensions)
-7. `doodler.py` now automatically computes the optimal CRF hyperparameters for each image chunk. I have done a lot of research into the sensitivity of results to input hyperparameters. The variation can be massive; therefore I have hard-coded some values in, implemented formulas for others, and allow the program to attempt to search for the remaining hyperparameters values. Seems to work ok in tests but please report - work still in progress
-8. new `doodler_optim.py` is for redoing imagery, this time with an expanded hyperparameter search. Use in an emergency (requires redoing sparse labels for the offending image/class set) - work still in progress (subject to change)
-9. the optimization of the hyperparameters happens on subsampled imagery (unless any image chunk dimension is less than 2000 pixels), which is faster and less memory intensive and still results in sensible outputs
-10. periods (other than to specify the file extension) are now allowed in input image file names
-11. `merge.py` will only use chunks if any image dimension is less than 10000 pixels
-12. `merge.py` now makes a semi-transparent overlay figure (like `doodler.py` does)
-
-
 ## How to use
 
 1. Put a single image or multiple images in the "data/images" folder
 
 2. (optionally) Clear the contents of the "data/label_images" folder
 
-3. make 'sparse' annotations on the imagery with a mouse or stylus, and use keyboard keys to advance through classes
+3. make a `config` file (see below)
+
+4. make 'sparse' annotations on the imagery with a mouse or stylus, and use keyboard keys to advance through classes
 
 This is python software that is designed to be used from within a `conda` environment. After setting up that environment, the user places imagery in a folder and creates a `config` file that tells the program where the imagery is and what classes will be labeled. The minimum number of classes is 2. There is no limit to the maximum number of classes.
 
@@ -69,17 +55,11 @@ The second option is possibly more time-efficient for complex scenes. It might a
 
 The software can be used to:
 
-1. label multiple images at once, without pre-masking, with 2 or more classes
-2. label a single image, with pre-masking (mask out imagery with a previously created binary mask), with 2 or more classes
-3. merge multiple label images together, each with with 2 or more classes
+1. label single or multiple images at once, with 2 or more classes, with and without pre-masking
+2. merge multiple label images together, each with with 2 or more classes
 
 The program will read 1- and 3-band imagery in all common file formats supported by [opencv](https://docs.opencv.org/2.4/modules/highgui/doc/reading_and_writing_images_and_video.html). 4+ band imagery must be in formats supported by the [tifffile](https://pypi.org/project/tifffile/) library. Geotiff imagery is read and written using [rasterio](https://rasterio.readthedocs.io/en/latest/)
 
-### Known issues
-
-This software is undergoing development and is subject to frequent change. In particular, 1d and 4d imagery has not been extensively tested so please expect bugs. Proper documentation is forthcoming.
-
-I know the brush thickness buttons doesn't change on the present tile - I am working on a fix
 
 ### Getting set up video
 
@@ -176,7 +156,7 @@ where the required arguments are:
 and the optional arguments and their default values:
 
 * `apply_mask`: either `None` (if no pre-masking) or a list of label names with which to mask the image. These label images should already exist *Default = None*
-* "num_bands": the number of bands in the input imagery (e.g. 1, 3, or 4). *Default = 3*
+* `num_bands`: the number of bands in the input imagery (e.g. 1, 3, or 4). *Default = 3*
 * `create_gtiff`: if "true", the program will create a geotiff label image - only appropriate if the input image is also geotiff. Otherwise, "false" *Default = false*
 * `alpha`: the degree of transparency in merged image-output plots *Default = 0.5*
 * `fact`: the factor by which to downsample by imagery. *Default = 5* (this might seem large, but trust me the CRF is very cpu and memory intensive otherwise, and the results work with a large `fact` turn out ok. Reduce to get finer resolution results by be warned, it will take a lot longer. )
@@ -201,6 +181,19 @@ Then run it with:
 ```
 python doodler.py -c config_file.json
 ```
+
+or optionally
+
+```
+python doodler.py -c path/to/config_file.json -f path/to/npy_file
+```
+
+Command line arguments:
+
+* `-h`: print a help message to screen, then exit
+* `-c`: for specification of a `config` file. Required.
+* `-f`: pass a `.npy` file to the program (made using `doodler.py` or `doodler_optim.py` during a previous session). Optional
+
 
 ### Draw on the image
 The title of the window is the label that will be associated with the pixels
@@ -295,23 +288,49 @@ and the optional arguments and their default values:
 
 ## Got a bad result?
 
-Did you get a disappointing result from `doodler.py`? You could redo the labelling, this time using `doodler_optim.py`. This script works in the same way as `doodler.py` but attempts to help with problematic imagery. It performs a much wider hyperparameter search 
+Did you get a disappointing result from `doodler.py`?
 
-<!--
-and the Kullback-Leibler (KL) divergence for each realization is computed. The minimum KL-divergence is returned as the "optimal" result. It often results in fairly coarse resolution labelling relative to `doodler.py` but tends tp maximize the accuracy of the main segments in the image.-->
+You could try using `doodler_optim.py`. This script works in the same way as `doodler.py` but attempts to help with problematic imagery. It performs a much wider hyperparameter search
 
-Why redo the labelling? You'll be more careful this time :) 
+You can redo the annotations:
 
-Just joking - it's top to the following list ...
+```
+python doodler_optim.py -c config_file.json
+```
+
+or optionally you can pass your previous annotations instead of having to redo annotations
+
+```
+python doodler_optim.py -c path/to/config_file.json -f path/to/npy_file
+```
+
+Command line arguments:
+
+* `-h`: print a help message to screen, then exit
+* `-c`: for specification of a `config` file. Required.
+* `-f`: pass a `.npy` file to the program (made using `doodler.py` or `doodler_optim.py` during a previous session). Optional
+
+Note that `doodler_optim.py` takes a lot longer to estimate the CRF solution compared to `doodler.py`, but the result should be better.
+
+<!-- Why redo the labelling? You'll be more careful this time :)
+
+Just joking - it's top to the following list ... -->
 
 
 ## Improvements coming soon
-* pass annotations to `doodler_optim.py` (and also `doodler.py`) instead of having to redo annotations
 * fix the line width issue on the current image tile
 * compiled executables
 * lookup table for consistent hex colours for common classes
 * config file generator (need a GUI?)
 * move labelling window to different screen option?
+* output image of your doodles, optionally
+
+### Known issues
+
+This software is undergoing development and is subject to frequent change. In particular, 1d and 4d imagery has not been extensively tested so please expect bugs. Proper documentation is forthcoming.
+
+I know the brush thickness buttons doesn't change on the present tile - I am working on a fix
+
 
 ## FAQS
 
@@ -326,6 +345,36 @@ Just joking - it's top to the following list ...
 
 
 To ask a different question, please use the `Issues` tab (see above) - please do not email me
+
+## Contributing
+If you'd like to discuss a new feature, use the `Issues` tab. If you'd like to submit code improvements, please submit a `pull request`
+
+
+
+## Version history 
+
+### 6/24/20
+
+1. now you can pass annotation files (`.npy`) to both `doodler_optim.py` and `doodler.py` if you want to 'redo' the CRF inference. This might be 1) using `doodler_optim.py` with a `.npy` file previously `doodler.py`, or 2) using `doodler.py`, but this time overriding any defaults or with different `config` parameters
+2. progress bar (!) in all scripts
+3. more memory/efficiency improvements
+
+### 6/20/20
+
+1. CRF inference is now faster and hopefully more robust
+2. better use of memory
+3. smaller output file sizes
+4. masking is now specified by type/name rather than filename, allowing for merging of multiple sets of image labels that conform to a common pattern
+5. config files are now easier to construct because no hard-coding of file paths, and no CRF parameter specification by default (although you can still specify the parameters)
+6. labeling still happens in chunks, but inference uses merged chunks for smaller imagery (<10000 px in all dimensions)
+7. `doodler.py` now automatically computes the optimal CRF hyperparameters for each image chunk. I have done a lot of research into the sensitivity of results to input hyperparameters. The variation can be massive; therefore I have hard-coded some values in, implemented formulas for others, and allow the program to attempt to search for the remaining hyperparameters values. Seems to work ok in tests but please report - work still in progress
+8. new `doodler_optim.py` is for redoing imagery, this time with an expanded hyperparameter search. Use in an emergency (requires redoing sparse labels for the offending image/class set) - work still in progress (subject to change)
+9. the optimization of the hyperparameters happens on subsampled imagery (unless any image chunk dimension is less than 2000 pixels), which is faster and less memory intensive and still results in sensible outputs
+10. periods (other than to specify the file extension) are now allowed in input image file names
+11. `merge.py` will only use chunks if any image dimension is less than 10000 pixels
+12. `merge.py` now makes a semi-transparent overlay figure (like `doodler.py` does)
+
+
 
 
 <!--

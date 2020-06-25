@@ -14,12 +14,15 @@
 
 
 import subprocess, ctypes
-import os, json
+import os, json, gc
 import sys, getopt
 import cv2
 import numpy as np
 from glob import glob
 import rasterio, tifffile
+
+##  progress bar (bcause te quiero demasiado ...)
+from tqdm import tqdm
 
 import pydensecrf.densecrf as dcrf
 from pydensecrf.utils import create_pairwise_bilateral, unary_from_labels
@@ -89,7 +92,7 @@ def getCRF_optim(img, Lc, num_classes, fact):
 
     scale = 1+(10 * (np.array(img.shape).max() / 3681)) #20
 
-    prob = 0.6 #0.9
+    prob = 0.8 #0.9
     compat_col = config["theta_col"] ##20
     compat_spat = 3
 
@@ -103,7 +106,7 @@ def getCRF_optim(img, Lc, num_classes, fact):
     else:
 
        thres = int(config['thres_size_1chunk']/2)
-       
+
        apply_fact = (img.shape[0] > thres) or (img.shape[1] > thres)
        #print("apply_fact: %i" % (apply_fact))
 
@@ -139,10 +142,10 @@ def getCRF_optim(img, Lc, num_classes, fact):
        mult_spat = 1
 
        ## loop through the 'theta' values (quarter, half, given, and double, quadruple)
-       for mult_col_compat in search:
-          for mult_spat_compat in [1]: #search:
+       for mult_col_compat in tqdm(search):
+          for mult_spat_compat in [1]:
              for mult_col in search:
-                for mult_prob in [1]: #search: #search: #mult_spat
+                for mult_prob in [1]:
 
                    #create (common to all experiments) unary potentials for each class
                    U = unary_from_labels(Lc.astype('int'),
@@ -169,67 +172,24 @@ def getCRF_optim(img, Lc, num_classes, fact):
                                       chdim=2)
 
                    #color feature extractor
-                   d.addPairwiseEnergy(feats, compat=mult_col_compat*compat_col,kernel=dcrf.DIAG_KERNEL,
-                        normalization=dcrf.NORMALIZE_SYMMETRIC)
+                   d.addPairwiseEnergy(feats, compat=mult_col_compat*compat_col,
+                        kernel=dcrf.DIAG_KERNEL,normalization=dcrf.NORMALIZE_SYMMETRIC)
 
                    #do inference
                    Q = d.inference(n_iter)
 
                    #K.append(d.klDivergence(Q))
 
-                   R.append(np.argmax(Q, axis=0).reshape((H, W)))
+                   R.append(np.argmax(Q, axis=0).reshape((H, W)).astype(np.uint8))
                    #P.append([mult_col, mult_col_compat]) #mult_spat, mult_spat_compat, mult_prob
                    del Q, d
 
        res = np.round(np.median(R, axis=0))
        del R, U
 
-       #mult_col, mult_col_compat = P[np.argmin(K)] #mult_col_compat, mult_spat_compat, mult_prob
-
-       # print("================================")
-       # print("Optimal color theta hyperparameter: %f" % (mult_col*theta_col))
-       # #print("Optimal spatial theta hyperparameter: %f" % (mult_spat*theta_spat))
-       # print("Optimal color compat hyperparameter: %f" % (mult_col_compat*compat_col))
-       # #print("Optimal spatial compat hyperparameter: %f" % (mult_spat_compat*compat_spat))
-       # #print("Optimal prior for label probability: %f" % (mult_prob*prob))
-       # print("================================")
-
-       # make new images scaled back up to the correct size
-       #img = np.array(Image.fromarray(img).resize((Worig, Horig), resample=1))
-       #Lc = np.array(Image.fromarray(Lc).resize((Worig, Horig), resample=1))
-
-       # #common unary potentials for each class
-       # U = unary_from_labels(Lc.astype('int'),
-       #                    num_classes + 1,
-       #                    gt_prob=np.min((mult_prob*prob,.999)))
-       #
-       # # do the CRF again with optimal parameters
-       # d = dcrf.DenseCRF2D(H, W, num_classes + 1)
-       #
-       # d.setUnaryEnergy(U)
-       #
-       # # to add the color-independent term, where features are the locations only:
-       # d.addPairwiseGaussian(sxy=(int(theta_spat), int(theta_spat)), compat=compat_spat, kernel=dcrf.DIAG_KERNEL, normalization=dcrf.NORMALIZE_SYMMETRIC)
-       #
-       # # color-dependent features
-       # feats = create_pairwise_bilateral(
-       #                    sdims=(int(mult_col*theta_col), int(mult_col*theta_col)),
-       #                    schan=(scale,
-       #                           scale,
-       #                           scale),
-       #                    img=img,
-       #                    chdim=2)
-       #
-       # d.addPairwiseEnergy(feats, compat=mult_col_compat*compat_col,kernel=dcrf.DIAG_KERNEL,normalization=dcrf.NORMALIZE_SYMMETRIC)
-       # Q = d.inference(n_iter*2)
-
-       #kl = d.klDivergence(Q)
-
-       # res = np.argmax(Q, axis=0).reshape((H, W))
-       #del Q, d, U
-
        if apply_fact:
-          res = np.array(Image.fromarray(res.astype(np.uint8)).resize((Worig, Horig), resample=1))
+          res = np.array(Image.fromarray(res.astype(np.uint8)).resize((Worig, Horig), \
+                         resample=1))
 
        res += 1 #avoid averaging over zero class
 
@@ -280,6 +240,51 @@ def getCRF_optim(img, Lc, num_classes, fact):
        #    del R
        #    #optimal parameters based on minimum summed entropy
        #    mult_col, mult_spat, mult_col_compat, mult_spat_compat = P[np.argmin(S)]
+
+       #mult_col, mult_col_compat = P[np.argmin(K)] #mult_col_compat, mult_spat_compat, mult_prob
+
+       # print("================================")
+       # print("Optimal color theta hyperparameter: %f" % (mult_col*theta_col))
+       # #print("Optimal spatial theta hyperparameter: %f" % (mult_spat*theta_spat))
+       # print("Optimal color compat hyperparameter: %f" % (mult_col_compat*compat_col))
+       # #print("Optimal spatial compat hyperparameter: %f" % (mult_spat_compat*compat_spat))
+       # #print("Optimal prior for label probability: %f" % (mult_prob*prob))
+       # print("================================")
+
+       # make new images scaled back up to the correct size
+       #img = np.array(Image.fromarray(img).resize((Worig, Horig), resample=1))
+       #Lc = np.array(Image.fromarray(Lc).resize((Worig, Horig), resample=1))
+
+       # #common unary potentials for each class
+       # U = unary_from_labels(Lc.astype('int'),
+       #                    num_classes + 1,
+       #                    gt_prob=np.min((mult_prob*prob,.999)))
+       #
+       # # do the CRF again with optimal parameters
+       # d = dcrf.DenseCRF2D(H, W, num_classes + 1)
+       #
+       # d.setUnaryEnergy(U)
+       #
+       # # to add the color-independent term, where features are the locations only:
+       # d.addPairwiseGaussian(sxy=(int(theta_spat), int(theta_spat)), compat=compat_spat, kernel=dcrf.DIAG_KERNEL, normalization=dcrf.NORMALIZE_SYMMETRIC)
+       #
+       # # color-dependent features
+       # feats = create_pairwise_bilateral(
+       #                    sdims=(int(mult_col*theta_col), int(mult_col*theta_col)),
+       #                    schan=(scale,
+       #                           scale,
+       #                           scale),
+       #                    img=img,
+       #                    chdim=2)
+       #
+       # d.addPairwiseEnergy(feats, compat=mult_col_compat*compat_col,kernel=dcrf.DIAG_KERNEL,normalization=dcrf.NORMALIZE_SYMMETRIC)
+       # Q = d.inference(n_iter*2)
+
+       #kl = d.klDivergence(Q)
+
+       # res = np.argmax(Q, axis=0).reshape((H, W))
+       #del Q, d, U
+
 
 # =========================================================
 class MaskPainter():
@@ -394,6 +399,7 @@ class MaskPainter():
         print("Cycle classes with [ESC] key")
         print("Go back a frame with [b] key")
         print("Skip a frame with [s] key")
+        print("Undo the current annotation with [z] key")
 
         self.draw = False  # True if mouse is pressed
         self.Z = self.MakeWindows()
@@ -772,16 +778,25 @@ if __name__ == '__main__':
 
     argv = sys.argv[1:]
     try:
-        opts, args = getopt.getopt(argv,"h:c:")
+        opts, args = getopt.getopt(argv,"h:c:f:")
     except getopt.GetoptError:
-        print('python doodler.py -c configfile.json')
+        print('python doodler_optim.py -c configfile.json [-f npy_file.npy]')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print('Example usage: python doodler.py -c config.json')
+            print('Example usage: python doodler_optim.py -c \
+                  path/to/config.json [-f path/to/npy_file.npy] ')
             sys.exit()
         elif opt in ("-c"):
             configfile = arg
+        elif opt in ("-f"):
+            npy_file = arg
+
+    # if no npy file is given to the program, set to None
+    if 'npy_file' not in locals():
+        npy_file = None
+    else:
+        doodles = np.load(npy_file)
 
     #configfile = 'config.json'
     # load the user configs
@@ -807,12 +822,13 @@ if __name__ == '__main__':
        config['theta_col'] = 20
     if "thres_size_1chunk" not in config:
        config['thres_size_1chunk'] = 10000
-                     
+
     # for k in config.keys():
     #     exec(k+'=config["'+k+'"]')
 
     if len(config['classes'])==1:
-       print("You must have a minimum of 2 classes, i.e. 1) object of interest and 2) background")
+       print("You must have a minimum of 2 classes, i.e. \
+             1) object of interest and 2) background")
        sys.exist(2)
 
     class_str = '_'.join(config['classes'].keys())
@@ -820,15 +836,17 @@ if __name__ == '__main__':
     files = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*.*')))
 
     N = []
-    #for f in files:
-    #    N.append(os.path.splitext(f)[0].split(os.sep)[-1])
+    if 'doodles' in locals():
+       for f in files:
+          N.append(os.path.splitext(f)[0].split(os.sep)[-1])
 
     # masks are binary labels where the null class is zero
     masks = []
     mask_names = []
     if config["apply_mask"]!='None':
        if type(config["apply_mask"]) is str:
-          to_search = glob(config['label_folder']+os.sep+'*'+config["apply_mask"]+'*label.png')
+          to_search = glob(config['label_folder']+os.sep+'*'+\
+                      config["apply_mask"]+'*label.png')
           for f in to_search:
              tmp, profile = OpenImage(f, None, config['num_bands'])
              tmp = (tmp[:,:,0]==0).astype('uint8')
@@ -850,124 +868,138 @@ if __name__ == '__main__':
                 mask_names.append(f)
                 del tmp
 
-    for f in files:
+    if 'doodles' not in locals(): #make annotations
 
-        screen_size = Screen()
-        o_img, profile = OpenImage(f, config['im_order'], config['num_bands'])
+       for f in tqdm(files):
 
-        if np.std(o_img[o_img>0]) < 10:
-           o_img[o_img==0] = np.min(o_img[o_img>0])
-           o_img = o_img-o_img.min()
-           o_img[o_img > (o_img.mean() + 2*o_img.std())] = o_img.mean()
-           o_img = np.round(rescale(o_img,1.,255.)).astype(np.uint8)
+          screen_size = Screen()
+          o_img, profile = OpenImage(f, config['im_order'], config['num_bands'])
 
-        #if masks:
-        #    for k in masks:
-        #        o_img[k==1] = 255
+          if np.std(o_img[o_img>0]) < 10:
+             o_img[o_img==0] = np.min(o_img[o_img>0])
+             o_img = o_img-o_img.min()
+             o_img[o_img > (o_img.mean() + 2*o_img.std())] = o_img.mean()
+             o_img = np.round(rescale(o_img,1.,255.)).astype(np.uint8)
 
-        if masks:
-            use = [m for m in mask_names if \
-                   m.startswith(os.path.splitext(f)[0].replace('images', 'label_images'))]
+          if masks:
+             use = [m for m in mask_names if \
+                   m.startswith(os.path.splitext(f)[0].replace('images', \
+                                'label_images'))]
 
-            for u in use:
-               ind = [i for i in range(len(mask_names)) if mask_names[i]==u][0]
-               o_img[masks[ind]==1] = 255
+             for u in use:
+                ind = [i for i in range(len(mask_names)) if mask_names[i]==u][0]
+                o_img[masks[ind]==1] = 255
 
 
-        ##name = f.split(os.sep)[-1].split('.')[0] #assume no dots in file name
-        name = os.path.splitext(f)[0].split(os.sep)[-1]
-        N.append(name)
+          name = os.path.splitext(f)[0].split(os.sep)[-1]
+          N.append(name)
 
-        mp = MaskPainter(o_img.copy(), config, screen_size)
-        out, Z = mp.LabelWindow()
+          mp = MaskPainter(o_img.copy(), config, screen_size)
+          out, Z = mp.LabelWindow()
 
-        out = out.astype(np.uint8)
-        nx, ny = np.shape(out)
-        gridy, gridx = np.meshgrid(np.arange(ny), np.arange(nx))
-        #o_img, profile = OpenImage(f, config['im_order'], config['num_bands'])
+          out = out.astype(np.uint8)
+          nx, ny = np.shape(out)
+          gridy, gridx = np.meshgrid(np.arange(ny), np.arange(nx))
 
-        counter = 0
-        for ind in Z:
-           np.savez(config['label_folder']+os.sep+name+"_tmp"+str(counter)+"_"+class_str+".npz",
+          counter = 0
+          for ind in Z:
+             np.savez(config['label_folder']+os.sep+name+"_tmp"+str(counter)+\
+                    "_"+class_str+".npz",
                     label=out[ind[0]:ind[1], ind[2]:ind[3]],
                     image=o_img[ind[0]:ind[1], ind[2]:ind[3]],
                     grid_x=gridx[ind[0]:ind[1], ind[2]:ind[3]],
                     grid_y=gridy[ind[0]:ind[1], ind[2]:ind[3]])
-           counter += 1
+             counter += 1
 
-        del Z, gridx, gridy, o_img
-        outfile = config['label_folder']+os.sep+name+"_"+class_str+".npy"
-        np.save(outfile, out)
-        print("annotations saved to %s" % (outfile))
-        del out
+          del Z, gridx, gridy, o_img
+          outfile = config['label_folder']+os.sep+name+"_"+class_str+".npy"
+          np.save(outfile, out)
+          print("annotations saved to %s" % (outfile))
+          del out
 
-    print("Sparse labelling complete ...")
+       print("Sparse labelling complete ...")
+    else:
+       print("Using provided labels ...")
 
     print("Dense labelling ... this may take a while")
+
+    gc.collect()
 
     # cycle through each image root name, stored in N
     for name in N:
         print("Working on %s" % (name))
-        # get a list of the temporary npz files
-        label_files = sorted(glob(config['label_folder']+os.sep+name +'*tmp*'+class_str+'.npz'))
-        print("Found %i image chunks" % (len(label_files)))
 
-        #load data to get the size
-        l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
-        l = np.load(l)
-        nx, ny = np.shape(l)
-        del l
-        apply_fact = (nx > config['thres_size_1chunk']) or (ny > config['thres_size_1chunk'])
+        if 'doodles' not in locals(): #make annotations
 
+           # get a list of the temporary npz files
+           label_files = sorted(glob(config['label_folder']+os.sep+name \
+                         +'*tmp*'+class_str+'.npz'))
+           print("Found %i image chunks" % (len(label_files)))
 
-        if apply_fact: #imagery is large and needs to be chunked
-
-           # in parallel, get the CRF prediction for each tile
-           # use all but 1 core (njobs=-2) and use pre_dispatch and max_nbytes to control memory usage
-           o = Parallel(n_jobs = -2, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=1e6)\
-                       (delayed(DoCrf_optim)(label_files[k], config, name) for k in range(len(label_files)))
-
-           #parse the object 'o' into images and a list of parameters
-           ims, theta_cols, compat_cols  = zip(*o)  ##, compat_spats, theta_spats, probs
-           del o
-
-           #get the median of each as the global best for the image
-           theta_col = np.nanmedian(theta_cols)
-           #theta_spat = np.nanmedian(theta_spats)
-           #prob = np.nanmedian(probs)
-           compat_col = np.nanmedian(compat_cols)
-           #compat_spat = np.nanmedian(compat_spats)
-
-           # load the npy file and get the grid coordinates to assign elements of 'ims' below
-           l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
-           l = np.load(l).astype(np.uint8)
+           #load data to get the size
+           l = sorted(glob(config['label_folder']+os.sep+name +'*'+ \
+               class_str+'.npy'))[0]
+           l = np.load(l)
            nx, ny = np.shape(l)
            del l
+           apply_fact = (nx > config['thres_size_1chunk']) or \
+                        (ny > config['thres_size_1chunk'])
 
-           # get image file and read it in with the profile of the geotiff, if appropriate
-           imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
-           img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
 
-           # allocate an empty label image
-           resr = np.zeros((nx, ny))
+           if apply_fact: #imagery is large and needs to be chunked
 
-           # assign the CRF tiles to the label image (resr) using the grid positions
-           for k in range(len(ims)):
-              l = np.load(label_files[k])#.astype(np.uint8)
-              resr[l['grid_x'], l['grid_y']] =ims[k]#+1
-           del ims, l
+              # in parallel, get the CRF prediction for each tile
+              # use all but 1 core (njobs=-2) and use pre_dispatch and max_nbytes to control memory usage
+              o = Parallel(n_jobs = -2, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=1e6)\
+                       (delayed(DoCrf_optim)(label_files[k], config, name)\
+                        for k in range(len(label_files)))
 
-        else: #image is small enough to fit on most memory at once
-           print("Imagery is small (<%i px), so not using chunks - they will be deleted" % (config['thres_size_1chunk']))
-           # get image file and read it in with the profile of the geotiff, if appropriate
-           imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
-           img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
-           l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
-           l = np.load(l).astype(np.uint8)
+              #parse the object 'o' into images and a list of parameters
+              ims, theta_cols, compat_cols  = zip(*o)  ##, compat_spats, theta_spats, probs
+              del o
 
-           resr, theta_col, compat_col = getCRF_optim(img,l,
+              #get the median of each as the global best for the image
+              theta_col = np.nanmedian(theta_cols)
+              #theta_spat = np.nanmedian(theta_spats)
+              #prob = np.nanmedian(probs)
+              compat_col = np.nanmedian(compat_cols)
+              #compat_spat = np.nanmedian(compat_spats)
+
+              # load the npy file and get the grid coordinates to assign elements of 'ims' below
+              l = sorted(glob(config['label_folder']+os.sep+name +'*'+\
+                         class_str+'.npy'))[0]
+              l = np.load(l).astype(np.uint8)
+              nx, ny = np.shape(l)
+              del l
+
+              # get image file and read it in with the profile of the geotiff, if appropriate
+              imfile = sorted(glob(os.path.normpath(config['image_folder']+\
+                       os.sep+'*'+name+'*.*')))[0]
+              img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
+
+              # allocate an empty label image
+              resr = np.zeros((nx, ny))
+
+              # assign the CRF tiles to the label image (resr) using the grid positions
+              for k in range(len(ims)):
+                 l = np.load(label_files[k])#.astype(np.uint8)
+                 resr[l['grid_x'], l['grid_y']] =ims[k]#+1
+              del ims, l
+
+           else: #image is small enough to fit on most memory at once
+              print("Imagery is small (<%i px), so not using chunks - they will be deleted" % \
+                   (config['thres_size_1chunk']))
+              # get image file and read it in with the profile of the geotiff, if appropriate
+              imfile = sorted(glob(os.path.normpath(config['image_folder']+\
+                       os.sep+'*'+name+'*.*')))[0]
+              img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
+              l = sorted(glob(config['label_folder']+os.sep+name +'*'+\
+                         class_str+'.npy'))[0]
+              l = np.load(l).astype(np.uint8)
+
+              resr, theta_col, compat_col = getCRF_optim(img,l,
                             len(config['classes']), config['fact']) # mu_col, mu_spat, prob
-           #resr += 1
+              #resr += 1
 
         # print("======================================")
         # print("Optimal color theta for this image: %f" % (theta_col))
@@ -977,9 +1009,30 @@ if __name__ == '__main__':
         # #print("Optimal prior for label prob for this image: %f" % (prob))
         # print("======================================")
 
+        else: #labels provided
+           print("computing CRF using provided annotations")
+
+           nx, ny = np.shape(doodles)
+           ## memory management
+           if np.max((nx, ny))>2000:
+               config['fact'] = np.max((config['fact'], 4))
+
+           # get image file and read it in with the profile of the geotiff, if appropriate
+           imfile = sorted(glob(os.path.normpath(config['image_folder']+\
+                       os.sep+'*'+name+'*.*')))[0]
+           img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
+
+           resr, theta_col, compat_col = getCRF_optim(img,doodles.astype(np.uint8),
+                            len(config['classes']), config['fact']) # mu_col, mu_spat, prob
+
+
+        gc.collect()
+
         # if 3-band image, mask out pixels that are [254, 254, 254]
         if np.ndim(img)==3:
            resr[np.sum(img,axis=2)==(254*3)] = 0
+           resr[np.sum(img,axis=2)==(0*3)] = 0
+           resr[np.sum(img,axis=2)==(255*3)] = 0
         elif np.ndim(img)==2: #2-band image
            resr[img==0] = 0 #zero out image pixels that are 0 and 255
            resr[img==255] = 0
@@ -1001,17 +1054,3 @@ if __name__ == '__main__':
         #for f in label_files:
         #   os.remove(f)
 
-
-#
-# import cv2
-# import numpy as np
-# import tifffile
-#
-# im1 = cv2.imread('data/images/4_rgb.png')
-# im2 = cv2.imread('data/images/4_elev.png')[:,:,0]
-#
-# merged = np.dstack((im1, im2)).astype(np.uint8) # creates a numpy array with 6 channels
-#
-# tifffile.imsave('merged.tiff', merged, planarconfig='contig')
-#
-# im3 = tifffile.imread('merged.tiff')
