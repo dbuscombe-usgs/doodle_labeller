@@ -22,6 +22,7 @@ import rasterio, tifffile
 
 ##  progress bar (bcause te quiero demasiado ...)
 from tqdm import tqdm
+from scipy.stats import mode as md
 
 import pydensecrf.densecrf as dcrf
 from pydensecrf.utils import create_pairwise_bilateral, unary_from_labels
@@ -51,14 +52,14 @@ def DoCrf(file, config, name):
     #num_classes = len(config['classes'])
     #fact = config['fact']
 
-    res = getCRF(data['image'],
+    res, p, preds = getCRF(data['image'],
                             data['label'],
                             config['classes'], config['fact'])
 
     if np.all(res)==254:
        res *= 0
 
-    return res
+    return res, p, preds
 
 # =========================================================
 def getCRF(img, Lc, label_lines, fact):
@@ -124,7 +125,7 @@ def getCRF(img, Lc, label_lines, fact):
                           len(label_lines) + 1,
                           gt_prob=prob)
 
-       R = []
+       R = []; P = []
 
        ## loop through the 'theta' values (half, given, and double)
        for mult in tqdm(search):
@@ -152,10 +153,25 @@ def getCRF(img, Lc, label_lines, fact):
           Q = d.inference(n_iter)
           #print("KL-divergence at {}: {}".format(i, d.klDivergence(Q)))
           R.append(1+np.argmax(Q, axis=0).reshape((H, W)).astype(np.uint8))
+
+          preds = np.array(Q, dtype=np.float32).reshape((len(label_lines)+1, H, W)).transpose(1, 2, 0) ##labels+1
+          P.append(preds)
+
           del Q
 
-       res = np.round(np.median(R, axis=0))
-       del R
+       ##res = np.round(np.median(R, axis=0))
+
+       R = list(R)
+
+       preds = np.median(P, axis=0)
+       del P
+
+       res, cnt = md(np.asarray(R, dtype='uint8'),axis=0)
+       res = np.squeeze(res)
+       cnt = np.squeeze(cnt)
+       p = cnt/len(R)
+
+       del cnt, R	   
 
        if fact>1:
           res = np.array(Image.fromarray(res.astype(np.uint8)).resize((Worig, Horig),
@@ -171,7 +187,7 @@ def getCRF(img, Lc, label_lines, fact):
            N = np.round(11*(Worig/(3681))).astype('int') #11 when ny=3681
            res = erosion(res, disk(N))
 
-    return res
+    return res, p, preds
 
 
 
@@ -586,7 +602,7 @@ def ReadGeotiff(image_path, rgb):
 
 
 # =========================================================
-def PlotAndSave(img, resr, name, config, class_str, profile):
+def PlotAndSave(img, resr, prob, name, config, class_str, profile):
     """
     Makes plots and save label images
     Input:
@@ -619,6 +635,16 @@ def PlotAndSave(img, resr, name, config, class_str, profile):
        resr = resr.astype('float')
        resr[resr<1] = np.nan
        resr = resr-1
+
+    outfile = config['label_folder']+os.sep+name+"_"+class_str+'_prob.png'
+
+    cv2.imwrite(outfile,
+                np.round(255*prob).astype('uint8'))
+
+    if config['create_gtiff']=='true':
+       image_path = outfile.replace('.png','.tif')
+       WriteGeotiff(image_path, prob, profile)
+
 
     try:
        alpha_percent = config['alpha'] #0.75
@@ -657,6 +683,36 @@ def PlotAndSave(img, resr, name, config, class_str, profile):
     cb.ax.set_yticklabels(config['classes'], fontsize=6)
 
     outfile = config['label_folder']+os.sep+name+"_"+class_str+'_mres.png'
+
+    plt.savefig(outfile,
+                dpi=300, bbox_inches = 'tight')
+    del fig; plt.close()
+
+
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111) #sp + 1)
+    ax1.get_xaxis().set_visible(False)
+    ax1.get_yaxis().set_visible(False)
+
+    if np.ndim(img)==3:
+       _ = ax1.imshow(img)
+    else:
+       img = img.astype('float')
+       img = np.round(255*(img/img.max()))
+       img[img==0] = np.nan
+       _ = ax1.imshow(img)
+
+    im2 = ax1.imshow(prob,
+                     cmap=plt.cm.Dark2,
+                     alpha=alpha_percent, interpolation='nearest',
+                     vmin=0, vmax=1)
+    divider = make_axes_locatable(ax1)
+    cax = divider.append_axes("right", size="5%")
+    cb=plt.colorbar(im2, cax=cax)
+    #cb.set_ticks(0.5 + np.arange(len(config['classes']) + 1))
+    #cb.ax.set_yticklabels(config['classes'], fontsize=6)
+
+    outfile = config['label_folder']+os.sep+name+"_"+class_str+'_prob_res.png'
 
     plt.savefig(outfile,
                 dpi=300, bbox_inches = 'tight')
@@ -786,7 +842,7 @@ if __name__ == '__main__':
 
           if masks:
               use = [m for m in mask_names if \
-                   m.startswith(os.path.splitext(f)[0].replace('images', 'label_images'))]
+                   os.path.normpath(m).startswith(os.path.splitext(f)[0].replace('images', 'label_images'))]
 
               for u in use:
                  ind = [i for i in range(len(mask_names)) if mask_names[i]==u][0]
@@ -853,6 +909,9 @@ if __name__ == '__main__':
               o = Parallel(n_jobs = -2, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=1e6)\
                        (delayed(DoCrf)(label_files[k], config, name) for k in range(len(label_files)))
 
+              ims, probs, preds = zip(*o)
+              del o
+
               # load the npy file and get the grid coordinates to assign elements of 'ims' below
               l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
               l = np.load(l)
@@ -863,14 +922,26 @@ if __name__ == '__main__':
               imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
               img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
 
-              # allocate an empty label image
+              # ==========================================
+			  # allocate an empty label image
               resr = np.zeros((nx, ny))
 
               # assign the CRF tiles to the label image (resr) using the grid positions
               for k in range(len(o)):
                  l = np.load(label_files[k])
-                 resr[l['grid_x'], l['grid_y']] =o[k]#+1
-              del o, l
+                 resr[l['grid_x'], l['grid_y']] =ims[k]#+1
+              del ims, l
+
+              #============================================
+			  # allocate an empty probablity image
+              prob = np.zeros((nx, ny))
+
+              # assign the CRF tiles to the label image (resr) using the grid positions
+              for k in range(len(o)):
+                 l = np.load(label_files[k])
+                 prob[l['grid_x'], l['grid_y']] =probs[k]#+1
+              del probs, l
+
 
            else: #image is small enough to fit on most memory at once
               print("Imagery is small (<%i px in all dimensions), so not using chunks - they will be deleted", (config['thres_size_1chunk']))
@@ -880,7 +951,7 @@ if __name__ == '__main__':
               l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
               l = np.load(l).astype(np.uint8)
 
-              resr = getCRF(img,l,config['classes'], config['fact'])
+              resr, prob, preds = getCRF(img,l,config['classes'], config['fact'])
               #resr += 1
               del l
 
@@ -897,9 +968,15 @@ if __name__ == '__main__':
                        os.sep+'*'+name+'*.*')))[0]
            img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
 
-           resr = getCRF(img,doodles.astype(np.uint8),
+           resr, prob, preds = getCRF(img,doodles.astype(np.uint8),
                             config['classes'], config['fact']) # mu_col, mu_spat, prob
 
+
+        outfile = config['label_folder']+os.sep+name+"_probs_per_class.npy"
+        np.save(outfile, preds)
+        del preds
+		
+        prob = np.array(Image.fromarray(prob).resize(tuple(np.array(resr.shape)), resample=1))
 
         gc.collect()
 
@@ -908,23 +985,24 @@ if __name__ == '__main__':
            resr[np.sum(img,axis=2)==(254*3)] = 0
            resr[np.sum(img,axis=2)==0] = 0
            resr[np.sum(img,axis=2)==(255*3)] = 0
+           prob[resr==0] = 0		   
         elif np.ndim(img)==2: #2-band image
            resr[img==0] = 0 #zero out image pixels that are 0 and 255
            resr[img==255] = 0
+           prob[resr==0] = 0		   
 
         if masks:
-            use = [m for m in mask_names if \
-                   m.startswith(os.path.splitext(imfile)[0].replace('images', 'label_images'))]
-
+              use = [m for m in mask_names if \
+                   os.path.normpath(m).startswith(os.path.splitext(f)[0].replace('images', 'label_images'))]
             for u in use:
                ind = [i for i in range(len(mask_names)) if mask_names[i]==u][0]
                resr[masks[ind]==1] = 0
-
+               prob[masks[ind]==1] = 0
 
         # plot the result and make label image files
-        PlotAndSave(img.copy(), resr, name, config, class_str, profile)
+        PlotAndSave(img.copy(), resr, prob, name, config, class_str, profile)
 
-        del resr, img
+        del resr, img, prob
 
         # #remove the temporary npz files
         # for f in label_files:

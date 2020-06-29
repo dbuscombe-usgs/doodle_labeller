@@ -19,6 +19,7 @@ from PIL import Image
 
 ##  progress bar (bcause te quiero demasiado ...)
 from tqdm import tqdm
+from scipy.stats import mode as md
 
 import pydensecrf.densecrf as dcrf
 from pydensecrf.utils import create_pairwise_bilateral, unary_from_labels
@@ -34,7 +35,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 # =========================================================
-def getCRF(img, Lc, label_lines, fact):
+def getCRF(img, Lc, num_classes, fact):
     """
     Uses a dense CRF model to refine labels based on sparse labels and underlying image
     Input:
@@ -93,14 +94,14 @@ def getCRF(img, Lc, label_lines, fact):
        W = img.shape[1]
 
        U = unary_from_labels(Lc.astype('int'),
-                          len(label_lines) + 1,
+                          num_classes + 1,
                           gt_prob=prob)
 
-       R = []
+       R = []; P = []
 
        ## loop through the 'theta' values (half, given, and double)
        for mult in tqdm(search):
-          d = dcrf.DenseCRF2D(H, W, len(label_lines) + 1)
+          d = dcrf.DenseCRF2D(H, W, num_classes + 1)
           d.setUnaryEnergy(U)
 
           # to add the color-independent term, where features are the locations only:
@@ -124,10 +125,25 @@ def getCRF(img, Lc, label_lines, fact):
           Q = d.inference(n_iter)
           #print("KL-divergence at {}: {}".format(i, d.klDivergence(Q)))
           R.append(1+np.argmax(Q, axis=0).reshape((H, W)).astype(np.uint8))
+
+          preds = np.array(Q, dtype=np.float32).reshape((num_classes+1, H, W)).transpose(1, 2, 0) ##labels+1
+          P.append(preds)
+
           del Q
 
-       res = np.round(np.median(R, axis=0))
-       del R
+       ##res = np.round(np.median(R, axis=0))
+
+       R = list(R)
+
+       preds = np.median(P, axis=0)
+       del P
+
+       res, cnt = md(np.asarray(R, dtype='uint8'),axis=0)
+       res = np.squeeze(res)
+       cnt = np.squeeze(cnt)
+       p = cnt/len(R)
+
+       del cnt, R	
 
        if fact>1:
           res = np.array(Image.fromarray(res.astype(np.uint8)).resize((Worig, Horig), 
@@ -139,10 +155,10 @@ def getCRF(img, Lc, label_lines, fact):
 
        res = median(res.astype(np.uint8), disk(N))
 
-       if len(label_lines)==2:
+       if num_classes==2:
            res = erosion(res, disk(N))
 
-    return res
+    return res, p, preds
 
 
 #===============================================================
@@ -563,11 +579,13 @@ if __name__ == '__main__':
 
        if (num_chunks==nx) | (num_chunks==ny):
           ## do this without windowing/overlap
-          res = getCRF(img, msk_flat+1, class_dict, config['fact'])-1
+          res, prob, preds = getCRF(img, msk_flat+1, len(class_dict), config['fact'])
+          res -= 1
 
        elif num_chunks>100:
 
-          res = getCRF(img, msk_flat+1, class_dict, config['fact'])-1
+          res, prob, preds = getCRF(img, msk_flat+1, len(class_dict), config['fact'])
+          res -= 1
 
        else:
 
@@ -591,9 +609,9 @@ if __name__ == '__main__':
 
              ## process each small image chunk in parallel, with one core left over
              o = Parallel(n_jobs = -2, verbose=1, pre_dispatch='2 * n_jobs', max_nbytes=1e6)\
-                   (delayed(getCRF_optim)(Z[k], L[k], num_classes, config['fact']) for k in range(len(Z)))
+                   (delayed(getCRF)(Z[k], L[k], num_classes, config['fact']) for k in range(len(Z)))
 
-             ims, theta_cols, compat_cols  = zip(*o)  ##, compat_spats, theta_spats, probs
+             ims, theta_cols, compat_cols, probs, preds  = zip(*o)  ##, compat_spats, theta_spats, probs
              del o, Z, L
 
              #get the median of each as the global best for the image
@@ -625,12 +643,46 @@ if __name__ == '__main__':
              ## make the grids by taking an average, plus one, and floor
              res = np.floor(1+(out/av))-1
              del out, av
+			 
+			 
+             ## get two grids, one for division and one for accumulation
+             ## this is to handle any amount of overlap between tiles
+             av = np.zeros((nx, ny))
+             out = np.zeros((nx, ny))
+             for k in range(len(ims)):
+                av[Zx[k], Zy[k]] += 1
+                out[Zx[k], Zy[k]] += probs[k]
+
+             ## delete what we no longer need
+             del Zx, Zy, ims
+             ## make the grids by taking an average, plus one, and floor
+             prob = np.floor(1+(out/av))-1
+             del out, av
+			 
 
           else: #imagery < 10000 pixels
-             res = getCRF(img, msk_flat+1, class_dict, config['fact'])-1
+             res, prob, preds = getCRF(img, msk_flat+1, class_dict, config['fact'])-1
              del msk_flat
 
        gc.collect()
+
+       outfile = config['label_folder']+os.sep+name+"_probs_per_class.npy"
+       np.save(outfile, preds)
+       del preds
+		
+       prob = np.array(Image.fromarray(prob).resize(tuple(np.array(res.shape)), resample=1))
+
+       # if 3-band image, mask out pixels that are [254, 254, 254]
+       if np.ndim(img)==3:
+          res[np.sum(img,axis=2)==(254*3)] = 0
+          res[np.sum(img,axis=2)==0] = 0
+          res[np.sum(img,axis=2)==(255*3)] = 0
+          prob[res==0] = 0		   
+       elif np.ndim(img)==2: #2-band image
+          res[img==0] = 0 #zero out image pixels that are 0 and 255
+          res[img==255] = 0
+          prob[res==0] = 0
+
 
        ##===================================================
        ## replace large with most populous value
@@ -639,6 +691,7 @@ if __name__ == '__main__':
 
        ##===================================================
        ## write out the refined flattened label image
+	   
        outfile = outfile.replace('_rgb.csv', '_label_crf.png')
 
        print("Writing our 2D label image to %s" % (outfile))
@@ -651,6 +704,17 @@ if __name__ == '__main__':
 
           WriteGeotiff(image_path, np.round(255*(res/len(class_dict) )).astype('uint8'), 
                        profile)
+
+
+       outfile = config['label_folder']+os.sep+name+"_"+class_str+'_prob.png'
+
+       cv2.imwrite(outfile,
+                np.round(255*prob).astype('uint8'))
+
+       if config['create_gtiff']=='true':
+          image_path = outfile.replace('.png','.tif')
+          WriteGeotiff(image_path, prob, profile)
+
 
        ## allocate empty 3D array of same x-y dimensions
        msk = np.zeros((res.shape)+(3,), dtype=np.uint8)
@@ -715,7 +779,38 @@ if __name__ == '__main__':
                 dpi=300, bbox_inches = 'tight')
        del fig; plt.close()
 
-       del img, resr
+
+       fig = plt.figure()
+       ax1 = fig.add_subplot(111) #sp + 1)
+       ax1.get_xaxis().set_visible(False)
+       ax1.get_yaxis().set_visible(False)
+
+       if np.ndim(img)==3:
+          _ = ax1.imshow(img)
+       else:
+          img = img.astype('float')
+          img = np.round(255*(img/img.max()))
+          img[img==0] = np.nan
+          _ = ax1.imshow(img)
+
+       im2 = ax1.imshow(prob,
+                     cmap=plt.cm.Dark2,
+                     alpha=alpha_percent, interpolation='nearest',
+                     vmin=0, vmax=1)
+       divider = make_axes_locatable(ax1)
+       cax = divider.append_axes("right", size="5%")
+       cb=plt.colorbar(im2, cax=cax)
+       #cb.set_ticks(0.5 + np.arange(len(config['classes']) + 1))
+       #cb.ax.set_yticklabels(config['classes'], fontsize=6)
+
+       outfile = config['label_folder']+os.sep+name+"_"+class_str+'_prob_res.png'
+
+       plt.savefig(outfile,
+                dpi=300, bbox_inches = 'tight')
+       del fig; plt.close()
+
+
+       del img, resr, prob
 
        counter += 1
        gc.collect()

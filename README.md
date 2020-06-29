@@ -353,6 +353,10 @@ If you'd like to discuss a new feature, use the `Issues` tab. If you'd like to s
 
 ## Version history 
 
+### 6/28/20
+The probability of the label is now computed and outputted in the same formats as the label images. 
+
+
 ### 6/24/20
 
 1. now you can pass annotation files (`.npy`) to both `doodler_optim.py` and `doodler.py` if you want to 'redo' the CRF inference. This might be 1) using `doodler_optim.py` with a `.npy` file previously `doodler.py`, or 2) using `doodler.py`, but this time overriding any defaults or with different `config` parameters

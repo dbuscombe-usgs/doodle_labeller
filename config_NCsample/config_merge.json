@@ -5,8 +5,9 @@
   "alpha": 0.5,
   "num_bands": 3,
   "create_gtiff": "false",
+  "name": "C26047181",
 
-  "to_merge": ["water","veg","sand"],
+  "to_merge": ["water","veg"],
 
   "classes1":
   {
@@ -20,14 +21,5 @@
     "veg_other_grass":"#13dc19",
     "veg_woody": "#1a7120",
     "no_veg": "#e35259"
-  },
-
-  "classes3":
-  {
-    "sand": "#c0d03b",
-    "roads": "#696669",
-    "buildings": "#de3e5d",
-    "people": "#74346b",
-    "cars": "#dd9c1a"
-   }
+  }
 }
