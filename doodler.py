@@ -92,6 +92,7 @@ def getCRF(img, Lc, label_lines, fact):
     prob = 0.9
     compat_spat = 3
 
+    #search = [.5,1,2,4,6]
     search = [.25,.5,1,2,4]
     #search = [1/8,1/4,1/2,1,2,4,8]
 
@@ -171,25 +172,32 @@ def getCRF(img, Lc, label_lines, fact):
        cnt = np.squeeze(cnt)
        p = cnt/len(R)
 
-       del cnt, R	   
+       del cnt, R
 
        if fact>1:
           res = np.array(Image.fromarray(res.astype(np.uint8)).resize((Worig, Horig),
                 resample=1))
 
+          p = np.array(Image.fromarray((100*p).astype(np.uint8)).resize((Worig, Horig),
+                resample=1))/100
+          preds = np.array(Image.fromarray((100*preds).astype(np.uint8)).resize((Worig, Horig),
+               resample=1))
+          p[p>1] = 1
+          p[p<0]= 0
+          preds[preds>1] = 1
+          preds[preds<0]= 0
+
        if config['medfilt']=="true":
           ## median filter to remove remaining high-freq spatial noise (radius of N pixels)
-          N = np.round(11*(Worig/(3681))).astype('int') #11 when ny=3681
+          N = np.round(5*(Worig/(3681))).astype('int') #11 when ny=3681
           print("Applying median filter of size: %i" % (N))
           res = median(res.astype(np.uint8), disk(N))
 
        if len(label_lines)==2:
-           N = np.round(11*(Worig/(3681))).astype('int') #11 when ny=3681
+           N = np.round(5*(Worig/(3681))).astype('int')
            res = erosion(res, disk(N))
 
     return res, p, preds
-
-
 
 
 # =========================================================
@@ -749,7 +757,7 @@ if __name__ == '__main__':
     # load the user configs
     with open(os.getcwd()+os.sep+configfile) as f:
         config = json.load(f)
-        
+
     # for k in config.keys():
     #     exec(k+'=config["'+k+'"]')
 
@@ -765,11 +773,11 @@ if __name__ == '__main__':
     if "apply_mask" not in config:
        config['apply_mask'] = None
     if "fact" not in config:
-       config['fact'] = 5
+       config['fact'] = 3
     if "compat_col" not in config:
-       config['compat_col'] = 20
+       config['compat_col'] = 40
     if "theta_col" not in config:
-       config['theta_col'] = 20
+       config['theta_col'] = 40
     if "medfilt" not in config:
        config['medfilt'] = "true"
     if "thres_size_1chunk" not in config:
@@ -781,7 +789,7 @@ if __name__ == '__main__':
        "You must have a minimum of 2 classes, i.e. 1) object of interest \
        and 2) background ... program exiting"
        )
-       sys.exist(2)
+       sys.exit(2)
 
     class_str = '_'.join(config['classes'].keys())
 
@@ -927,7 +935,7 @@ if __name__ == '__main__':
               resr = np.zeros((nx, ny))
 
               # assign the CRF tiles to the label image (resr) using the grid positions
-              for k in range(len(o)):
+              for k in range(len(label_files)):
                  l = np.load(label_files[k])
                  resr[l['grid_x'], l['grid_y']] =ims[k]#+1
               del ims, l
@@ -975,8 +983,8 @@ if __name__ == '__main__':
         outfile = config['label_folder']+os.sep+name+"_probs_per_class.npy"
         np.save(outfile, preds)
         del preds
-		
-        prob = np.array(Image.fromarray(prob).resize(tuple(np.array(resr.shape)), resample=1))
+
+        #prob = np.array(Image.fromarray(prob).resize(tuple(np.array(resr.shape)), resample=1))
 
         gc.collect()
 
@@ -985,14 +993,14 @@ if __name__ == '__main__':
            resr[np.sum(img,axis=2)==(254*3)] = 0
            resr[np.sum(img,axis=2)==0] = 0
            resr[np.sum(img,axis=2)==(255*3)] = 0
-           prob[resr==0] = 0		   
+           prob[resr==0] = 0
         elif np.ndim(img)==2: #2-band image
            resr[img==0] = 0 #zero out image pixels that are 0 and 255
            resr[img==255] = 0
-           prob[resr==0] = 0		   
+           prob[resr==0] = 0
 
         if masks:
-              use = [m for m in mask_names if \
+            use = [m for m in mask_names if \
                    os.path.normpath(m).startswith(os.path.splitext(f)[0].replace('images', 'label_images'))]
             for u in use:
                ind = [i for i in range(len(mask_names)) if mask_names[i]==u][0]

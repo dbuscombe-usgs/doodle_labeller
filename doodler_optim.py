@@ -134,7 +134,7 @@ def getCRF_optim(img, Lc, num_classes, fact):
        W = img.shape[1]
 
        # define some factors to apply to the nominal thetas and mus
-       search = [1/4,1/3,1/2,1,2,3,4]
+       search = [1/4,1/3,1/2,3/4,1,4/3,2,3,4]
        #search = [.25,.5,1,2,4]
 
        R = [] #for label realization
@@ -188,7 +188,7 @@ def getCRF_optim(img, Lc, num_classes, fact):
 
                    preds = np.array(Q, dtype=np.float32).reshape((num_classes+1, H, W)).transpose(1, 2, 0) ##labels+1
                    P.append(preds)
-		  
+
                    del Q, d
 
        ##res = np.round(np.median(R, axis=0))
@@ -207,15 +207,24 @@ def getCRF_optim(img, Lc, num_classes, fact):
        if apply_fact:
           res = np.array(Image.fromarray(res.astype(np.uint8)).resize((Worig, Horig), \
                          resample=1))
+          p = np.array(Image.fromarray((100*p).astype(np.uint8)).resize((Worig, Horig),
+                resample=1))/100
+          preds = np.array(Image.fromarray((100*preds).astype(np.uint8)).resize((Worig, Horig),
+               resample=1))
+          p[p>1] = 1
+          p[p<0]= 0
+          preds[preds>1] = 1
+          preds[preds<0]= 0
 
        res += 1 #avoid averaging over zero class
 
        # median filter to remove remaining high-freq spatial noise (radius of N pixels)
-       N = np.round(11*(Worig/(7362/fact))).astype('int') #11 when ny=7362
+       N = np.round(5*(Worig/(7362/fact))).astype('int')
        #print("median filter size: %i" % (N))
        res = median(res.astype(np.uint8), disk(N))
 
        if num_classes==2:
+           N = np.round(5*(Worig/(3681))).astype('int')
            res = erosion(res, disk(N))
 
     return res, mult_col*theta_col, mult_col_compat*compat_col, p, preds #, mult_prob*prob
@@ -870,13 +879,13 @@ if __name__ == '__main__':
     if "apply_mask" not in config:
        config['apply_mask'] = None
     if "fact" not in config:
-       config['fact'] = 5
+       config['fact'] = 3
     if "medfilt" not in config:
        config['medfilt'] = "true"
     if "compat_col" not in config:
-       config['compat_col'] = 20
+       config['compat_col'] = 40
     if "theta_col" not in config:
-       config['theta_col'] = 20
+       config['theta_col'] = 40
     if "thres_size_1chunk" not in config:
        config['thres_size_1chunk'] = 10000
 
@@ -1095,8 +1104,6 @@ if __name__ == '__main__':
         outfile = config['label_folder']+os.sep+name+"_probs_per_class.npy"
         np.save(outfile, preds)
         del preds
-		
-        prob = np.array(Image.fromarray(prob).resize(tuple(np.array(resr.shape)), resample=1))
 
         gc.collect()
 
@@ -1105,7 +1112,7 @@ if __name__ == '__main__':
            resr[np.sum(img,axis=2)==(254*3)] = 0
            resr[np.sum(img,axis=2)==0] = 0
            resr[np.sum(img,axis=2)==(255*3)] = 0
-           prob[resr==0] = 0		   
+           prob[resr==0] = 0
         elif np.ndim(img)==2: #2-band image
            resr[img==0] = 0 #zero out image pixels that are 0 and 255
            resr[img==255] = 0
@@ -1128,4 +1135,3 @@ if __name__ == '__main__':
         #remove the temporary npz files
         #for f in label_files:
         #   os.remove(f)
-

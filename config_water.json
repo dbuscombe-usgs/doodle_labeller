@@ -4,12 +4,14 @@
   "max_x_steps": 2,
   "max_y_steps": 2,
   "ref_im_scale": 0.8,
-  "lw": 5,
+  "lw": 25,
   "im_order": "RGB",
   "alpha": 0.5,
   "create_gtiff": "false",
   "num_bands": 3,
   "apply_mask": "None",
+  "medfilt": "true",
+  "fact": 2,
   "classes": {
    "water": "#3b81d0",
    "no_water": "#e35259"
