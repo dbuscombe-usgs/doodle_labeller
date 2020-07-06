@@ -96,6 +96,14 @@ def getCRF(img, Lc, label_lines, fact):
     search = [.25,.5,1,2,4]
     #search = [1/8,1/4,1/2,1,2,4,8]
 
+    ## relative frequency of annotations
+    rel_freq = np.bincount(Lc.flatten())#, minlength=len(label_lines)+1)
+    rel_freq[0] = 0
+    rel_freq = rel_freq / rel_freq.sum()
+    rel_freq[rel_freq<1e-4] = 1e-4
+    rel_freq = rel_freq / rel_freq.sum()
+
+
     if np.mean(img)<1:
        H = img.shape[0]
        W = img.shape[1]
@@ -164,15 +172,28 @@ def getCRF(img, Lc, label_lines, fact):
 
        R = list(R)
 
-       preds = np.median(P, axis=0)
+       try:
+          preds = np.average(P, axis=0, weights = 1/rel_freq)
+       except:
+          print("using unweighted average")
+          preds = np.median(P, axis=0)
        del P
 
-       res, cnt = md(np.asarray(R, dtype='uint8'),axis=0)
-       res = np.squeeze(res)
+       res = np.zeros((H,W))
+       counter = 1
+       for k in range(len(label_lines)):
+           res[preds[:,:,k]>=(1/len(label_lines) )] = counter
+           counter += 1
+
+       _, cnt = md(np.asarray(R, dtype='uint8'),axis=0)
+       res2 = np.squeeze(_)
        cnt = np.squeeze(cnt)
        p = cnt/len(R)
 
-       del cnt, R
+       #p = np.max(preds, axis=-1)
+
+       del R #, cnt
+
 
        if fact>1:
           res = np.array(Image.fromarray(res.astype(np.uint8)).resize((Worig, Horig),
@@ -180,8 +201,19 @@ def getCRF(img, Lc, label_lines, fact):
 
           p = np.array(Image.fromarray((100*p).astype(np.uint8)).resize((Worig, Horig),
                 resample=1))/100
-          preds = np.array(Image.fromarray((100*preds).astype(np.uint8)).resize((Worig, Horig),
+          if len(label_lines)==2:
+             preds = np.array(Image.fromarray((100*preds).astype(np.uint8)).resize((Worig, Horig),
                resample=1))
+          else:
+             preds2 = np.zeros((Horig,Worig,preds.shape[-1]))
+             for k in range(preds.shape[-1]):
+                preds2[:,:,k] = np.array(
+                                Image.fromarray((100*preds[:,:,k]).astype(np.uint8)).resize((Worig, Horig),
+                                resample=1)
+                                )
+             del preds
+             preds = preds2.copy()
+             del preds2
           p[p>1] = 1
           p[p<0]= 0
           preds[preds>1] = 1
@@ -799,8 +831,15 @@ if __name__ == '__main__':
 
     N = []
     if 'doodles' in locals():
+       match = os.path.splitext(npy_file)[0].split(os.sep)[-1]
        for f in files:
-          N.append(os.path.splitext(f)[0].split(os.sep)[-1])
+          tmp = os.path.splitext(f)[0].split(os.sep)[-1]
+          if match.startswith(tmp):
+             N.append(tmp)
+
+
+    # for f in files:
+    #   N.append(os.path.splitext(f)[0].split(os.sep)[-1])
 
     ## TODO: add error checking on apply-mask items to check if files exist
 

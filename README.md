@@ -353,6 +353,10 @@ If you'd like to discuss a new feature, use the `Issues` tab. If you'd like to s
 
 ## Version history
 
+### 7/5/20
+1. Implemented a better way to estimate the final label from the stack or probabilities associated with each class
+
+
 ### 7/1/20
 1. The probability of the label is now computed and outputted in the same formats as the label images. This probability will be useful for purposes such as further label refinement, error propagation, etc
 2. Bug fixes, and more tests into default CRF hyperparameters

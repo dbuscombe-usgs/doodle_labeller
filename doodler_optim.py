@@ -98,6 +98,14 @@ def getCRF_optim(img, Lc, num_classes, fact):
     compat_col = config["theta_col"] ##20
     compat_spat = 3
 
+    ## relative frequency of annotations
+    rel_freq = np.bincount(Lc.flatten())
+    rel_freq[0] = 0
+    rel_freq = rel_freq / rel_freq.sum()
+    rel_freq[rel_freq<1e-4] = 1e-4
+    rel_freq = rel_freq / rel_freq.sum()
+
+
     #if the image or label is empty ...
     if ((np.mean(img)<1.) or (np.std(Lc)==0.)):
        H = img.shape[0]
@@ -195,10 +203,21 @@ def getCRF_optim(img, Lc, num_classes, fact):
 
        R = list(R)
 
-       preds = np.median(P, axis=0)
+       try:
+          preds = np.average(P, axis=-1, weights = np.tile((1/rel_freq), (len(label_lines)+1, len(search) ) )
+       except:
+          print("using unweighted average")
+          preds = np.median(P, axis=0)
+       del P
 
-       res, cnt = md(np.asarray(R, dtype='uint8'),axis=0)
-       res = np.squeeze(res)
+       res = np.zeros((H,W))
+       counter = 1
+       for k in range(len(label_lines)):
+           res[preds[:,:,k]>=(1/len(label_lines) )] = counter
+           counter += 1
+
+       _, cnt = md(np.asarray(R, dtype='uint8'),axis=0)
+       #res2 = np.squeeze(res)
        cnt = np.squeeze(cnt)
        p = cnt/len(R)
 
