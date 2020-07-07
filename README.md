@@ -354,6 +354,15 @@ If you'd like to discuss a new feature, use the `Issues` tab. If you'd like to s
 ## Version history
 
 ### 7/5/20
+
+1. moved all common functions to `funcs.py`, and consolidated several functions
+2. implemented a better and quicker way to final label( now is the weighted average of each class). Works much better in general and particularly for small isolated regions. The weights are the relative frequencies of the classes in the annotations
+4. fixed the probabilities per class bugs (many)
+5. disabled garbage collector to help troubleshoot program slow-down over successive classes
+6. smaller probability per class npy file
+7. now automatically removes the `npz` files at the end
+
+### 7/5/20
 1. Implemented a better way to estimate the final label from the stack or probabilities associated with each class
 
 

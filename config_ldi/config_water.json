@@ -11,7 +11,7 @@
   "apply_mask": "None",
   "num_bands": 3,
   "medfilt": "false",
-  "fact": 2,  
+  "fact": 3,  
   "classes": {
    "water": "#2f36aa",
    "no_water": "#e35259"
