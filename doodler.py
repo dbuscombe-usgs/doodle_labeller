@@ -83,6 +83,8 @@ if __name__ == '__main__':
 
     files = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*.*')))
 
+    files = [f for f in files if '.txt' not in f]
+
     N = []
     if 'doodles' in locals():
        match = os.path.splitext(npy_file)[0].split(os.sep)[-1]

@@ -24,6 +24,7 @@ from PIL import Image
 from skimage.filters.rank import median
 from skimage.morphology import disk, erosion
 
+cv2.setUseOptimized(True)
 
 # =========================================================
 def DoCrf(file, config, name, optim):
@@ -280,7 +281,7 @@ class MaskPainter():
         self.class_mask = np.zeros((self.image.shape[0],
                                    self.image.shape[1],
                                    int(len(self.config['classes']) + 1)), dtype=np.uint8)
-        self.mask_copy = self.class_mask.copy()
+        #self.mask_copy = self.class_mask.copy()
         self.size = self.config['lw']
         self.current_x = 0
         self.current_y = 0
@@ -403,7 +404,7 @@ class MaskPainter():
             cv2.imshow('whole image', ref_img)
             cv2.resizeWindow('whole image',
                              (self.WinScales(ref_img.shape[:2])))
-            cv2.moveWindow('whole image', 0, 28)
+            cv2.moveWindow('whole image', 0, 0)
             nav = False   # Navigator variable
             if not lab:
                 counter = 1   # Label number
@@ -426,7 +427,7 @@ class MaskPainter():
                 cv2.namedWindow(label, cv2.WINDOW_NORMAL)
                 cv2.resizeWindow(label,
                                  tuple(self.WinScales(imcopy.shape[:2])))
-                cv2.moveWindow(label, 0, 28)  # Move it to (0,0)
+                cv2.moveWindow(label, 0, 0)  # Move it to (0,0)
                 cv2.setMouseCallback(label, self.AnnoDraw, self.size)
                 while(1):
                     showim = self.Overlay(self.im_sect, Lc)
@@ -480,6 +481,7 @@ class MaskPainter():
                             self.size = 1
                         print("brush width = " + str(self.size))
 
+                del showim, imcopy
                 cv2.destroyWindow(label)
 
             if not nav:
