@@ -61,7 +61,7 @@ if __name__ == '__main__':
     if "fact" not in config:
        config['fact'] = 3
     if "compat_col" not in config:
-       config['compat_col'] = 80
+       config['compat_col'] = 40
     if "theta_col" not in config:
        config['theta_col'] = 80
     if "medfilt" not in config:
@@ -170,7 +170,7 @@ if __name__ == '__main__':
                     grid_y=gridy[ind[0]:ind[1], ind[2]:ind[3]])
              counter += 1
 
-          del Z, gridx, gridy, o_img
+          del Z, gridx, gridy, o_img, mp
           outfile = config['label_folder']+os.sep+name+"_"+class_str+".npy"
           np.save(outfile, out)
           print("annotations saved to %s" % (outfile))

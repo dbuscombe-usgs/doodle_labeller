@@ -58,9 +58,9 @@ if __name__ == '__main__':
     if "medfilt" not in config:
        config['medfilt'] = "true"
     if "compat_col" not in config:
-       config['compat_col'] = 80
+       config['compat_col'] = 100
     if "theta_col" not in config:
-       config['theta_col'] = 80
+       config['theta_col'] = 60
     if "thres_size_1chunk" not in config:
        config['thres_size_1chunk'] = 10000
 

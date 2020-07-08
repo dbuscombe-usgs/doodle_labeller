@@ -170,7 +170,9 @@ def getCRF(img, Lc, config, optim):
 
        R = list(R)
 
-       if 1+len(label_lines)<len(search):
+       # search, X, Y, num classes
+
+       if len(label_lines)==2: #<len(search):
           try:
              preds = np.average(P, axis=-1, weights = 1/rel_freq)
           except:
@@ -179,16 +181,27 @@ def getCRF(img, Lc, config, optim):
 
           probs_per_class = np.median(P, axis=0)
 
-       else:
-          try:
-             preds = np.average(np.asarray(P).T, axis=-1, weights = 1/rel_freq).T
-          except:
-             print("using unweighted average")
-             preds = np.median(np.asarray(P).T, axis=-1).T
-
+       elif np.asarray(P).shape[0] > np.asarray(P).shape[-1]:
+          preds = np.median(np.asarray(P).T, axis=-1).T
           probs_per_class = np.median(P, axis=0)
 
+       else:
+          try:
+             preds = np.average(np.asarray(P), axis=0, weights = 1/rel_freq)
+          except:
+             print("using unweighted average")
+             preds = np.median(np.asarray(P), axis=-1).T
+
+          probs_per_class = np.median(P, axis=-1)
+
        del P
+
+       #class is the last channel
+       if 1+len(label_lines) != np.asarray(probs_per_class).shape[-1]:
+          probs_per_class = np.swapaxes(probs_per_class,0,-1)
+
+       if 1+len(label_lines) != np.asarray(preds).shape[-1]:
+          preds = np.swapaxes(preds,0,-1)
 
        res = np.zeros((H,W))
        counter = 1
@@ -204,10 +217,10 @@ def getCRF(img, Lc, config, optim):
        # cnt = np.squeeze(cnt)
        # p = cnt/len(R)
 
-       if 1+len(label_lines)<len(search):
+       if len(label_lines)==2: #<len(search):
           p = 1-(np.std(preds, axis=0)/len(label_lines))
        else:
-          p = 1-(np.std(preds, axis=-1)/len(label_lines))
+          p = np.max(preds, axis=-1)##*len(label_lines) 1-(np.std(preds, axis=-1)/len(label_lines))
 
 
        del R, preds
@@ -266,7 +279,7 @@ class MaskPainter():
         #self.im_mean = im_mean
         self.class_mask = np.zeros((self.image.shape[0],
                                    self.image.shape[1],
-                                   int(len(self.config['classes']) + 1)))
+                                   int(len(self.config['classes']) + 1)), dtype=np.uint8)
         self.mask_copy = self.class_mask.copy()
         self.size = self.config['lw']
         self.current_x = 0
@@ -354,7 +367,7 @@ class MaskPainter():
             vals = np.argmax(overlay, axis=2)
             vals *= 18
             new_im[:, :, 0][vals > 0] = vals[vals > 0]
-            return new_im
+            return new_im.astype(np.uint8)
         else:
             return src
 
@@ -378,7 +391,7 @@ class MaskPainter():
                 ck = 0
             self.im_sect = self.image[self.Z[ck][0]:self.Z[ck][1],
                                       self.Z[ck][2]:self.Z[ck][3],
-                                      :].copy()
+                                      :].copy().astype(np.uint8)
             # FIX: See below
             self.im_sect[self.im_sect[:, :, 2] == 255] = 254
             cv2.rectangle(ref_img,
@@ -402,7 +415,7 @@ class MaskPainter():
                 #      It needs to get from class mask, so that it can
                 #      keep the labels that have been done
                 Lc = np.zeros((s[0], s[1],
-                               len(self.config['classes']) + 1))
+                               len(self.config['classes']) + 1), dtype=np.uint8)
             else:
                 Lc[counter] = Lc[counter] * 0
             while counter <= len(self.config['classes']):
@@ -776,7 +789,7 @@ def PlotAndSave(img, resr, prob, name, config, class_str, profile):
        _ = ax1.imshow(img)
 
     im2 = ax1.imshow(prob,
-                     cmap=plt.cm.Dark2,
+                     cmap=plt.cm.RdBu,
                      alpha=alpha_percent, interpolation='nearest',
                      vmin=0, vmax=1)
     divider = make_axes_locatable(ax1)
