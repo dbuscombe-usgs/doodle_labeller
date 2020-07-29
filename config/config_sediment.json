@@ -1,0 +1,27 @@
+{
+  "image_folder" : "data/images",
+  "label_folder": "data/label_images",
+  "max_x_steps": 4,
+  "max_y_steps": 4,
+  "ref_im_scale": 0.8,
+  "lw": 10,
+  "im_order": "RGB",
+  "alpha": 0.5,
+  "create_gtiff": "false",
+  "num_bands": 3,
+  "apply_mask": ["deep"],
+  "medfilt": "false",
+  "fact": 3,
+  "classes": {
+    "anthro": "#aa352f",
+    "vegetation": "#2faa58",
+    "mud": "#aa8b2f",
+    "sand": "#a0aa2f",
+    "submerged": "#84aa2f",
+    "gravel": "#186074",
+    "boulder": "#4f7373",
+    "wrack_peat": "#aa2f9c",
+    "snow_ice": "#aa2f69",
+    "shell": "#84b1b4"
+   }
+}

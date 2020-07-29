@@ -73,7 +73,7 @@ I made a series of videos that demonstrate how to use the software using example
 2. [Video 2](https://drive.google.com/file/d/1oiIBWeANwr23qKnJqOf6fpFUZSuQTVq4/view?usp=sharing): Creating a binary mask of vegetation / no vegetation, using pre-masking (on two sample images). No audio
 3. [Video 3](https://drive.google.com/file/d/1TkU2cxy7sLdEPAF9cXee4Eo7VtDE9RZs/view?usp=sharing): Creating a multiclass label images of substrates, using pre-masking (on two sample images). No audio
 4. [Video 4](https://drive.google.com/file/d/1QwKWklMF8lop0uVqWxWX1NEtvDcjAnrU/view?usp=sharing): Merging multiclass label images of substrates with binary masks of water, and vegetation (on two sample images)
-5. [Video 5](https://drive.google.com/file/d/1_z2reRdOnjdhaRworvf9J8-vIGIJt9ht/view?usp=sharing): Using `doodler_optim.py` to redo a set of class labels (on one sample image). Audio
+<!-- 5. [Video 5](https://drive.google.com/file/d/1_z2reRdOnjdhaRworvf9J8-vIGIJt9ht/view?usp=sharing): Using `doodler_optim.py` to redo a set of class labels (on one sample image). Audio -->
 
 
 ### Clone the github repo
@@ -192,7 +192,7 @@ Command line arguments:
 
 * `-h`: print a help message to screen, then exit
 * `-c`: for specification of a `config` file. Required.
-* `-f`: pass a `.npy` file to the program (made using `doodler.py` or `doodler_optim.py` during a previous session). Optional
+* `-f`: pass a `.npy` file to the program (made using `doodler.py` during a previous session). Optional
 
 
 ### Draw on the image
@@ -212,9 +212,7 @@ After you have labeled each image tile for each image, the program will automati
 
 ## Run merge.py
 
-This script takes each individual mask image and merges them into one, keeping track of classes and class colours. It optimizes the CRF parameters for each chunk. This script takes a while to run, because it splits the merged image into small pieces, carries out a task-specific CRF-based label refinement on each, then averages the results. The idea is to refine the image by over-sampling.
-
-The amount of time the program takes is a function of the size of the image, and the number of CPU cores. The program uses all available cores, so machines with many cores will be faster.
+This script takes each individual mask image and merges them into one, keeping track of classes and class colours.
 
 Assuming you have already activated the conda environment (`conda activate doodler` - see above) ...
 
@@ -285,29 +283,35 @@ and the optional arguments and their default values:
 * `theta_col`: standard deviation value for the color/space-dependent term in the model, initial value for search. *Default = 20*
 * `medfilt`: whether or not to apply a median filter to smooth the results *Default = "true"*
 
+## Got file spaces in your file names?
+
+That's a problem for doodler. On unix based file systems:
+
+`find -name "* *" -type f | rename 's/ /_/g'`
+
 
 ## Got a bad result?
 
 Did you get a disappointing result from `doodler.py`?
 
-You could try using `doodler_optim.py`. This script works in the same way as `doodler.py` but attempts to help with problematic imagery. It performs a much wider hyperparameter search
+You could try using `optim = True` in the config file, to help with problematic imagery. It performs a much wider hyperparameter search
 
 You can redo the annotations:
 
 ```
-python doodler_optim.py -c config_file.json
+python doodler.py -c config_file.json
 ```
 
 or optionally you can pass your previous annotations instead of having to redo annotations
 
 ```
-python doodler_optim.py -c path/to/config_file.json -f path/to/npy_file
+python doodler.py -c path/to/config_file.json -f path/to/npy_file
 ```
 
 Command line arguments:
 
 * `-h`: print a help message to screen, then exit
-* `-c`: for specification of a `config` file. Required.
+* `-c`: for specification of a `config` file. Optional - program will prompt you for it if it is missing from command line arguments
 * `-f`: pass a `.npy` file to the program (made using `doodler.py` or `doodler_optim.py` during a previous session). Optional
 
 Note that `doodler_optim.py` takes a lot longer to estimate the CRF solution compared to `doodler.py`, but the result should be better.
@@ -316,6 +320,16 @@ Note that `doodler_optim.py` takes a lot longer to estimate the CRF solution com
 
 Just joking - it's top to the following list ... -->
 
+## CRF implementation details
+
+1. if `optim` is `True`, the probability of your annotation is set to 0.8, and a set of 10 factors are defined that modify `theta_col` and `compat_col`. If `optim` is `False`, the probability of your annotation is set to 0.9, and a set of 5 factors are defined that modify `theta_col` and `compat_col`.
+2. per-class weights are computed as inverse relative frequencies. The number of each pixel in each annotation class is computed and normalized. If the maximum relative frequency is more than 5 times the minimum, the maximum is halved and the relative frequencies re-normalized before their inverses are used as weights in the CRF model.
+3. the CRF `scale` parameter is determined as 1+(5 * (M / 3681)) where M is the maximum image dimension
+4. the hyperparameters `theta_col` and `compat_col` are modified by the factors described above. The 10 `optim` factors are .25, .33, .5, .75, 1, 1.33, 2, 3, and 4, therefore if `theta_col` is 100, the program would cycle through creating a CRF realization based on  `theta_col` = `compat_col` = 25, then 33, 50, 75, 100, 133, 200, 300, and 400. The 5 `optim` factors are .25,.5,1,2, and 4.
+5. The predictions (softmax scores based on normalized logits) per class are computed as the weighted average of the per-class predictions compiled over the number of hyperparameter factors.
+6. Each per-class prediction raster is then median-filtered using a disk-shaped structural element with a radius of 10*(M/(3681)) pixels
+7. To make the final classification, if the per-class prediction is > .5 (for binary) or > 1/N where N=number of classes (for multiclass), the pixel is encoded that label. This works in order of classes listed in the config file, so a latter class could override a former one. Where no grid cell is encoded with a label, such as where the above criteria are not met, the label is the argument maximum for for that cell in the stack.
+
 
 ## Improvements coming soon
 * fix the line width issue on the current image tile
@@ -323,7 +337,6 @@ Just joking - it's top to the following list ... -->
 * lookup table for consistent hex colours for common classes
 * config file generator (need a GUI?)
 * move labelling window to different screen option?
-* output image of your doodles, optionally
 
 ### Known issues
 
@@ -335,7 +348,7 @@ I know the brush thickness buttons doesn't change on the present tile - I am wor
 ## FAQS
 
 * *Why are my results poor?*
-> Some things to check: 1) the default 'fact' is set quite high to deal with really large imagery and/or small computer RAM (<< 16 GB) and/or large imagery (>8,000 pixels in any dimension). If your system can handle it (it probably can), set the number low in the config file e.g. `'fact': 2,` for a downsize factor of 2, and `'fact': 1,` for no downsizing. 2) did you run `doodler_optim.py`? 3) Increase one or both of the CRF parameters in the config file, e.g. change from the default `'compat_col': 20,` and/or `'theta_col': 20,` to something like `'compat_col': 40,` and/or `'theta_col': 40,`
+> Some things to check: 1) the default 'fact' is set quite high to deal with really large imagery and/or small computer RAM (<< 16 GB) and/or large imagery (>8,000 pixels in any dimension). If your system can handle it (it probably can), set the number low in the config file e.g. `'fact': 2,` for a downsize factor of 2, and `'fact': 1,` for no downsizing. 2) did you run `doodler.py` using `optim=True`? 3) Increase one or both of the CRF parameters in the config file, e.g. change from the default `'compat_col': 120,` and/or `'theta_col': 120,` to something like `'compat_col': 140,` and/or `'theta_col': 140,`
 
 * *Why is my window so small?*
 > Try using a large number for `ref_im_scale` in the config file, increasing it from the default value of 0.8 to, say, 1.0 or even 1.2
@@ -373,7 +386,7 @@ If you'd like to discuss a new feature, use the `Issues` tab. If you'd like to s
 
 ### 6/24/20
 
-1. now you can pass annotation files (`.npy`) to both `doodler_optim.py` and `doodler.py` if you want to 'redo' the CRF inference. This might be 1) using `doodler_optim.py` with a `.npy` file previously `doodler.py`, or 2) using `doodler.py`, but this time overriding any defaults or with different `config` parameters
+1. now you can pass annotation files (`.npy`) to `doodler.py` if you want to 'redo' the CRF inference.
 2. progress bar (!) in all scripts
 3. more memory/efficiency improvements
 
@@ -392,7 +405,25 @@ If you'd like to discuss a new feature, use the `Issues` tab. If you'd like to s
 11. `merge.py` will only use chunks if any image dimension is less than 10000 pixels
 12. `merge.py` now makes a semi-transparent overlay figure (like `doodler.py` does)
 
+### 7/24/20
 
+1. the per class predictions are now median-filtered before used in MAP estimation
+2. defaults should be `theta_col` = `compat_col` = 120 (?)
+3. updated README with explanation about the implementation of the CRF (see `CRF implementation details`	above)
+4. probabilities per class now float16 to save disk space
+5. the mres file now shows your annotations as well as the label image, side by side. Numerous uses...
+6. got rid of some annoying warning message so the screen printout is easier to read
+
+### 7/29/20
+1. removed `doodler_optim.py` (optim can now be specified as a config file parameter, `optim=True`)
+2. good general parameters now hard-coded: `compat_col` = 120, `theta_col` = 100
+3. fixed plotting errors so 1-class labels show in mres file, and zeros in final label image dealt with so they don't skew color scale
+4. smaller `search` range
+5. simplified `merge.py` and made it more consistent with `doodler.py`, using same function calls. Now it doesn't do an additional CRF inference step, just the merging of existing labels
+6. tidied example images and labels
+7. changed algo that converts probabilities per class to final label image. A class is assigned if its probability is 2(1/N) where N is the number of classes, or 1/N if N=2
+8. if `-c` flag is missing, it prompts you to pick a config file manually/graphically
+9. no longer makes a `_probs_per_class.npy` file (not necessary going forward)
 
 
 <!--

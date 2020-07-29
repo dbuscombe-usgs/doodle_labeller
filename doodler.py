@@ -13,6 +13,8 @@
 # > Incorporating some of the code contribution from LCDR Brodie Wells, Naval Postgraduate school Monterey
 
 from funcs import *
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
 
 #===============================================================
 if __name__ == '__main__':
@@ -39,10 +41,22 @@ if __name__ == '__main__':
     else:
         doodles = np.load(npy_file)
 
+    if 'configfile' not in locals():
+        root = Tk()
+        configfile =  askopenfilename(initialdir = "/config",
+                                                    title = "choose your config file",
+                                                    filetypes = (("json files","*.json"),("all files","*.*")))
+        print("[INFO] Configuration file selected : %s" % (configfile))
+        root.withdraw()
+
     #configfile = 'config.json'
     # load the user configs
-    with open(os.getcwd()+os.sep+configfile) as f:
-        config = json.load(f)
+    try:
+        with open(os.getcwd()+os.sep+configfile) as f:
+            config = json.load(f)
+    except:
+        with open(configfile) as f:
+            config = json.load(f)
 
     # for k in config.keys():
     #     exec(k+'=config["'+k+'"]')
@@ -61,18 +75,20 @@ if __name__ == '__main__':
     if "fact" not in config:
        config['fact'] = 3
     if "compat_col" not in config:
-       config['compat_col'] = 40
+       config['compat_col'] = 120
     if "theta_col" not in config:
-       config['theta_col'] = 80
+       config['theta_col'] = 100 #120
     if "medfilt" not in config:
-       config['medfilt'] = "true"
+       config['medfilt'] = True #"true"
     if "thres_size_1chunk" not in config:
        config['thres_size_1chunk'] = 10000
+    if "optim" not in config:
+       config['optim'] = False
 
     #the program needs two classes
     if len(config['classes'])==1:
        print(
-       "You must have a minimum of 2 classes, i.e. 1) object of interest \
+       "[ERROR] You must have a minimum of 2 classes, i.e. 1) object of interest \
        and 2) background ... program exiting"
        )
        sys.exit(2)
@@ -175,26 +191,26 @@ if __name__ == '__main__':
           del Z, gridx, gridy, o_img, mp
           outfile = config['label_folder']+os.sep+name+"_"+class_str+".npy"
           np.save(outfile, out)
-          print("annotations saved to %s" % (outfile))
+          print("[INFO] annotations saved to %s" % (outfile))
           del out
 
-       print("Sparse labelling complete ...")
+       print("[INFO] Sparse labelling complete ...")
     else:
-       print("Using provided labels ...")
+       print("[INFO] Using provided labels ...")
 
     #gc.collect()
-    print("Dense labelling ... this may take a while")
+    print("[INFO] Dense labelling ... this may take a while")
 
     # cycle through each image root name, stored in N
     for name in N:
-        print("Working on %s" % (name))
+        print("[INFO] Working on %s" % (name))
 
         if 'doodles' not in locals(): #make annotations
 
            # get a list of the temporary npz files
            label_files = sorted(glob(config['label_folder']+os.sep+name +'*tmp*'+\
                          class_str+'.npz'))
-           print("Found %i image chunks" % (len(label_files)))
+           print("[INFO] Found %i image chunks" % (len(label_files)))
 
            #load data to get the size
            l = sorted(glob(config['label_folder']+os.sep+name +'*'+\
@@ -243,34 +259,34 @@ if __name__ == '__main__':
               for k in range(len(o)):
                  l = np.load(label_files[k])
                  prob[l['grid_x'], l['grid_y']] =probs[k]#+1
-              del probs, l
+              del probs#, l
 
 
            else: #image is small enough to fit on most memory at once
-              print("Imagery is small (<%i px in all dimensions), so not using chunks", (config['thres_size_1chunk']))
+              print("[INFO] Imagery is small (<%i px in all dimensions), so not using chunks", (config['thres_size_1chunk']))
               # get image file and read it in with the profile of the geotiff, if appropriate
               imfile = sorted(glob(os.path.normpath(config['image_folder']+os.sep+'*'+name+'*.*')))[0]
               img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
               l = sorted(glob(config['label_folder']+os.sep+name +'*'+class_str+'.npy'))[0]
               l = np.load(l).astype(np.uint8)
 
-              resr, prob, preds = getCRF(img, l, config, False)
+              resr, prob, preds = getCRF(img, l, config)
               #resr += 1
-              del l
+              #del l
 
         else: #labels provided
-           print("computing CRF using provided annotations")
+           print("[INFO] computing CRF using provided annotations")
 
            # get image file and read it in with the profile of the geotiff, if appropriate
            imfile = sorted(glob(os.path.normpath(config['image_folder']+\
                        os.sep+'*'+name+'*.*')))[0]
            img, profile = OpenImage(imfile, config['im_order'], config['num_bands'])
 
-           resr, prob, preds = getCRF(img,doodles.astype(np.uint8), config, False)
+           resr, prob, preds = getCRF(img,doodles.astype(np.uint8), config) ##, False)
 
-        outfile = config['label_folder']+os.sep+name+"_probs_per_class.npy"
-        np.save(outfile, preds)
-        del preds
+        #outfile = config['label_folder']+os.sep+name+"_probs_per_class.npy"
+        #np.save(outfile, preds)
+        #del preds
 
         #gc.collect()
 
@@ -287,14 +303,17 @@ if __name__ == '__main__':
 
         if masks:
             use = [m for m in mask_names if \
-                   os.path.normpath(m).startswith(os.path.splitext(f)[0].replace('images', 'label_images'))]
+                   os.path.normpath(m).startswith(os.path.splitext(imfile)[0].replace('images', 'label_images'))]
             for u in use:
                ind = [i for i in range(len(mask_names)) if mask_names[i]==u][0]
                resr[masks[ind]==1] = 0
                prob[masks[ind]==1] = 0
 
         # plot the result and make label image files
-        PlotAndSave(img.copy(), resr, prob, name, config, class_str, profile)
+        if 'doodles' not in locals(): #make annotations
+            PlotAndSave(img.copy(), resr, l.astype(np.uint8), prob, name, config, class_str, profile)
+        else:
+            PlotAndSave(img.copy(), resr, doodles.astype(np.uint8), prob, name, config, class_str, profile)
 
         del resr, img, prob
 

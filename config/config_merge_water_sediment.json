@@ -1,0 +1,31 @@
+{
+  "image_folder" : "data/images",
+  "label_folder": "data/label_images",
+  "im_order": "RGB",
+  "alpha": 0.5,
+  "num_bands": 3,
+  "create_gtiff": "true",
+  "name": "2018_12_ldi_15cm_utm_0_0",
+
+  "to_merge": ["deep","anthro"],
+
+  "classesA": {
+    "deep": "#2f36aa",
+    "whitewater": "#E317CE",
+    "shallow": "#b3946b",
+    "no_water": "#e35259"
+  },
+
+  "classesB": {
+    "anthro": "#aa352f",
+    "vegetation": "#2faa58",
+    "mud": "#aa8b2f",
+    "sand": "#a0aa2f",
+    "submerged_sediment": "#84aa2f",
+    "gravel": "#186074",
+    "boulder": "#4f7373",
+    "wrack_peat": "#aa2f9c",
+    "snow_ice": "#aa2f69",
+    "shell": "#84b1b4"
+   }
+}

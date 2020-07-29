@@ -8,6 +8,8 @@ import numpy as np
 from glob import glob
 import rasterio, tifffile
 
+np.seterr(divide='ignore', invalid='ignore')
+
 ##  progress bar (bcause te quiero demasiado ...)
 from tqdm import tqdm
 #from scipy.stats import mode as md
@@ -23,6 +25,7 @@ from PIL import Image
 #from skimage.filters.rank import entropy
 from skimage.filters.rank import median
 from skimage.morphology import disk, erosion
+from skimage.util import img_as_ubyte
 
 cv2.setUseOptimized(True)
 
@@ -54,7 +57,7 @@ def DoCrf(file, config, name, optim):
 
 
 # =========================================================
-def getCRF(img, Lc, config, optim):
+def getCRF(img, Lc, config): #, optim):
     """
     Uses a dense CRF model to refine labels based on sparse labels and underlying image
     Input:
@@ -74,20 +77,23 @@ def getCRF(img, Lc, config, optim):
         res : CRF-refined 2D label image
     """
 
-    if optim is True:
-       search = [.25,.33,.5,.75,1,1.33,2,3,4]
+    # 1. if `optim` is `True`, the probability of your annotation is set to 0.8,
+    # and a set of 10 factors are defined that modify `theta_col` and `compat_col`.
+    # If `optim` is `False`, the probability of your annotation
+    # is set to 0.9, and a set of 5 factors are defined that modify `theta_col` and `compat_col`.
+    if config['optim'] is True:
+       search = [.5,.66,.75,1,1.25,1.33,2]
        prob = 0.8
     else:
-       search = [.25,.5,1,2,4]
+       search = [.5,.75,1,1.25,1.5] #[.25,.5,1,2,4]
        prob = 0.9
-
 
     label_lines = config['classes']
     fact = config['fact']
 
     # initial parameters
     n_iter = 10
-    scale = 1+(10 * (np.array(img.shape).max() / 3681))
+    scale = 1+(5 * (np.array(img.shape).max() / 3681))
 
     compat_col = config['compat_col'] #20
     theta_col = config['theta_col'] #20
@@ -95,16 +101,27 @@ def getCRF(img, Lc, config, optim):
     prob = 0.9
     compat_spat = 3
 
-    #search = [.5,1,2,4,6]
-    #search = [1/8,1/4,1/2,1,2,4,8]
+    # 2. per-class weights are computed as inverse relative frequencies.
+    # The number of each pixel in each annotation class is computed and normalized.
+    # If the maximum relative frequency is more than 5 times the minimum, the maximum is halved
+    # and the relative frequencies re-normalized before their inverses are used as weights in the CRF model.
 
     ## relative frequency of annotations
-    rel_freq = np.bincount(Lc.flatten())#, minlength=len(label_lines)+1)
-    rel_freq[0] = 0
-    rel_freq = rel_freq / rel_freq.sum()
-    rel_freq[rel_freq<1e-4] = 1e-4
-    rel_freq = rel_freq / rel_freq.sum()
+    #rel_freq = np.bincount(Lc.flatten())#, minlength=len(label_lines)+1)
+    if len(np.unique(Lc.flatten()))>1:
+        rel_freq = np.sqrt(np.bincount(Lc.flatten())) #sqrt does area --> length
+        rel_freq[0] = 0
+        rel_freq = rel_freq / rel_freq.sum()
+        rel_freq[rel_freq<1e-4] = 1e-4
+        rel_freq = rel_freq / rel_freq.sum()
+    else:
+        rel_freq = 1
 
+    if type(rel_freq) is not int:
+        if rel_freq.max() > 5*rel_freq.min():
+            print("Large class imbalance detected ... modifying  weights accordingly")
+            rel_freq[np.argmax(rel_freq)] = rel_freq[np.argmax(rel_freq)]/2
+            rel_freq = rel_freq / rel_freq.sum()
 
     if np.mean(img)<1:
        H = img.shape[0]
@@ -137,6 +154,12 @@ def getCRF(img, Lc, config, optim):
                           gt_prob=prob)
 
        R = []; P = []
+
+    # 4. the hyperparameters `theta_col` and `compat_col` are modified by the factors described above.
+    # The 10 `optim` factors are .25, .33, .5, .75, 1, 1.33, 2, 3, and 4, therefore if `theta_col` is 100,
+    # the program would cycle through creating a CRF realization
+    # based on  `theta_col` = `compat_col` = 25, then 33, 50, 75, 100, 133, 200, 300, and 400.
+    # The 5 `optim` factors are .25,.5,1,2, and 4.
 
        ## loop through the 'theta' values (half, given, and double)
        for mult in tqdm(search):
@@ -171,29 +194,35 @@ def getCRF(img, Lc, config, optim):
 
        R = list(R)
 
-       # search, X, Y, num classes
+
+        # 5. The predictions (softmax scores based on normalized logits)
+        # per class are computed as the weighted average of the per-class
+        # predictions compiled over the number of hyperparameter factors.
 
        if len(label_lines)==2: #<len(search):
           try:
              preds = np.average(P, axis=-1, weights = 1/rel_freq)
           except:
-             print("using unweighted average")
-             preds = np.median(P, axis=-1)
+             preds = np.average(P[1:], axis=0, weights = 1/rel_freq)
+          # finally:
+          #    print("using unweighted average")
+          #    preds = np.median(P, axis=-1)
 
           probs_per_class = np.median(P, axis=0)
 
        elif np.asarray(P).shape[0] > np.asarray(P).shape[-1]:
           preds = np.median(np.asarray(P).T, axis=-1).T
           probs_per_class = np.median(P, axis=0)
-
        else:
-          try:
-             preds = np.average(np.asarray(P), axis=0, weights = 1/rel_freq)
-          except:
-             print("using unweighted average")
-             preds = np.median(np.asarray(P), axis=-1).T
+           try:
+               if np.asarray(P).shape[0]==len(rel_freq):
+                   preds = np.average(np.asarray(P), axis=0, weights = 1/rel_freq)
+               else:
+                   preds = np.average(np.asarray(P), axis=0, weights = search)
+           except:
+               preds = np.average(P[1:], axis=0, weights = 1/rel_freq)
 
-          probs_per_class = np.median(P, axis=-1)
+           probs_per_class = np.median(P, axis=-1)
 
        del P
 
@@ -204,30 +233,54 @@ def getCRF(img, Lc, config, optim):
        if 1+len(label_lines) != np.asarray(preds).shape[-1]:
           preds = np.swapaxes(preds,0,-1)
 
+    # 6. Each per-class prediction raster is then median-filtered using a disk-shaped
+    # structural element with a radius of 15*(M/(3681)) pixels
+
+       for k in range(len(label_lines)):
+         N = np.round(10*(Worig/(3681))).astype('int') #11 when ny=3681
+         if (len(label_lines)==2):
+            preds[k,:,:] = median(img_as_ubyte(preds[k,:,:]), disk(N))
+            preds[k,:,:] = preds[k,:,:]/np.max(preds[k,:,:])
+         else:
+            preds[:,:,k] = median(img_as_ubyte(preds[:,:,k]), disk(N))
+            preds[:,:,k] = preds[:,:,k]/np.max(preds[:,:,k])
+
+        # 7. To make the final classification, if the per-class prediction is > .5 (for binary)
+        # or > 1/N where N=number of classes (for multiclass), the pixel is encoded that label.
+        # This works in order of classes listed in the config file, so a latter class
+        # could override a former one. Where no grid cell is encoded
+        #  with a label, such as where the above criteria are not met,
+        #  the label is the argument maximum for for that cell in the stack.
        res = np.zeros((H,W))
        counter = 1
        for k in range(len(label_lines)):
          if (len(label_lines)==2):
             res[preds[k,:,:]>=(1/len(label_lines) )] = counter
          else:
-            res[preds[:,:,k]>= .5] = counter
+            res[preds[:,:,k]>= 2*(1/len(label_lines)) ] = counter  #.5
          counter += 1
 
-       # _, cnt = md(np.asarray(R, dtype='uint8'),axis=0)
-       # res2 = np.squeeze(_)
-       # cnt = np.squeeze(cnt)
-       # p = cnt/len(R)
+       try:
+           res[res==0] = np.argmax(preds, axis=-1)[res==0]
+       except:
+           res[res==0] = np.argmax(preds, axis=-1).T[res==0]
 
        if len(label_lines)==2: #<len(search):
           p = 1-(np.std(preds, axis=0)/len(label_lines))
        else:
-          p = np.max(preds, axis=-1)##*len(label_lines) 1-(np.std(preds, axis=-1)/len(label_lines))
-
+          #p = np.max(preds, axis=-1)
+          #s = np.max(preds, axis=-1) - np.min(preds, axis=-1)
+          #s = (s/np.max(s))
+          p = np.nanmax(preds, axis=-1) #1-s
+          p[p<1/len(label_lines)] = 1/len(label_lines)
 
        del R, preds
 
-
        if fact>1:
+
+          img = np.array(Image.fromarray(img).resize((Worig, Horig),
+                resample=1))-1
+
           res = np.array(Image.fromarray(1+res.astype(np.uint8)).resize((Worig, Horig),
                 resample=1))-1
           if len(label_lines)==2:
@@ -264,7 +317,33 @@ def getCRF(img, Lc, config, optim):
            # N = np.round(5*(Worig/(3681))).astype('int')
            # res = ~erosion(~res, disk(N))
 
-    return res, p, probs_per_class
+       # U = unary_from_labels(res.astype('int'),
+       #                    len(label_lines) + 1,
+       #                    gt_prob=prob)
+       #
+       # d = dcrf.DenseCRF2D(Horig, Worig, len(label_lines) + 1)
+       # d.setUnaryEnergy(U)
+       #
+       # # to add the color-independent term, where features are the locations only:
+       # d.addPairwiseGaussian(sxy=(theta_spat, theta_spat),
+       #               compat=compat_spat,
+       #               kernel=dcrf.DIAG_KERNEL,
+       #               normalization=dcrf.NORMALIZE_SYMMETRIC)
+       #
+       # feats = create_pairwise_bilateral(
+       #                            sdims=(theta_col, theta_col),
+       #                            schan=(scale,
+       #                                   scale,
+       #                                   scale),
+       #                            img=img,
+       #                            chdim=2)
+       #
+       # d.addPairwiseEnergy(feats, compat=compat_col,kernel=dcrf.DIAG_KERNEL,normalization=dcrf.NORMALIZE_SYMMETRIC)
+       # Q = d.inference(n_iter)
+       # #print("KL-divergence at {}: {}".format(i, d.klDivergence(Q)))
+       # res = 1+np.argmax(Q, axis=0).reshape((Horig, Worig)).astype(np.uint8)
+
+    return res, p, probs_per_class.astype('float16')
 
 # =========================================================
 class MaskPainter():
@@ -681,7 +760,7 @@ def ReadGeotiff(image_path, rgb):
 
 
 # =========================================================
-def PlotAndSave(img, resr, prob, name, config, class_str, profile):
+def PlotAndSave(img, resr, Lc, prob, name, config, class_str, profile):
     """
     Makes plots and save label images
     Input:
@@ -715,8 +794,13 @@ def PlotAndSave(img, resr, prob, name, config, class_str, profile):
           WriteGeotiff(image_path, lab, profile)
 
        resr = resr.astype('float')
+       if np.any(resr==0):
+           resr += 1
        resr[resr<1] = np.nan
-       resr = resr-1
+       if int(np.nanmin(resr))==1:
+           resr = resr-1
+       resr[resr==0] = np.nan
+
 
     outfile = config['label_folder']+os.sep+name+"_"+class_str+'_prob.png'
 
@@ -748,7 +832,7 @@ def PlotAndSave(img, resr, prob, name, config, class_str, profile):
         resr[resr==2] = 0
 
     fig = plt.figure()
-    ax1 = fig.add_subplot(111) #sp + 1)
+    ax1 = fig.add_subplot(121) #sp + 1)
     ax1.get_xaxis().set_visible(False)
     ax1.get_yaxis().set_visible(False)
 
@@ -763,12 +847,38 @@ def PlotAndSave(img, resr, prob, name, config, class_str, profile):
     im2 = ax1.imshow(resr,
                      cmap=cmap,
                      alpha=alpha_percent, interpolation='nearest',
-                     vmin=0, vmax=len(config['classes']))
+                     vmin=1, vmax=len(config['classes'])+1)
     divider = make_axes_locatable(ax1)
-    cax = divider.append_axes("right", size="5%")
+    cax = divider.append_axes("right", size="5%", pad="2%")
     cb=plt.colorbar(im2, cax=cax)
     cb.set_ticks(0.5 + np.arange(len(config['classes']) + 1))
     cb.ax.set_yticklabels(config['classes'], fontsize=6)
+
+
+    ax1 = fig.add_subplot(122) #sp + 1)
+    ax1.get_xaxis().set_visible(False)
+    ax1.get_yaxis().set_visible(False)
+
+    if np.ndim(img)==3:
+       _ = ax1.imshow(img)
+    else:
+       img = img.astype('float')
+       img = np.round(255*(img/img.max()))
+       img[img==0] = np.nan
+       _ = ax1.imshow(img)
+
+    Lc = Lc.astype('float')
+    Lc[Lc==0] = np.nan
+    im2 = ax1.imshow(Lc-1,
+                     cmap=cmap,
+                     alpha=alpha_percent, interpolation='nearest',
+                     vmin=0, vmax=len(config['classes']))
+    divider = make_axes_locatable(ax1)
+    cax = divider.append_axes("right", size="5%", pad="2%")
+    cb=plt.colorbar(im2, cax=cax)
+    cb.set_ticks(0.5 + np.arange(len(config['classes']) + 1))
+    cb.ax.set_yticklabels(config['classes'], fontsize=6)
+
 
     outfile = config['label_folder']+os.sep+name+"_"+class_str+'_mres.png'
 
@@ -795,7 +905,7 @@ def PlotAndSave(img, resr, prob, name, config, class_str, profile):
                      alpha=alpha_percent, interpolation='nearest',
                      vmin=0, vmax=1)
     divider = make_axes_locatable(ax1)
-    cax = divider.append_axes("right", size="5%")
+    cax = divider.append_axes("right", size="5%", pad="2%")
     cb=plt.colorbar(im2, cax=cax)
     #cb.set_ticks(0.5 + np.arange(len(config['classes']) + 1))
     #cb.ax.set_yticklabels(config['classes'], fontsize=6)
