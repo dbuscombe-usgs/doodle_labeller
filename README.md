@@ -126,20 +126,27 @@ Several example config files are provided. A generic multi-label case would be s
 	  "max_x_steps": 4,
 	  "max_y_steps": 4,
 	  "ref_im_scale": 0.8,
-	  "lw": 15,
+	  "lw": 5,
 	  "im_order": "RGB",
 	  "alpha": 0.5,
-	  "num_bands": 3,
 	  "create_gtiff": "false",
-	  "apply_mask": ["water", "veg"],
+	  "num_bands": 3,
+	  "apply_mask": "None",
 	  "classes": {
+	   "vegetation": "#0bec0b",
+	   "anthro": "#f12063",
+	   "road_pavement": "#7c7878",
 	   "sand": "#c0d03b",
-	   "roads": "#696669",
-	   "buildings": "#de3e5d",
-	   "people": "#74346b",
-	   "cars": "#dd9c1a"
+	   "mud": "#62894d",
+	   "marsh": "#1c6d1d",
+	   "gravel": "#395c27",
+	   "boulders": "#94925c",
+	   "snow_ice": "#f6faf6",
+	   "wrack_peat": "#23ad96",
+	   "indeterminate": "#9e289c"
 	   }
 	}
+
 
 where the required arguments are:
 
@@ -160,8 +167,9 @@ and the optional arguments and their default values:
 * `create_gtiff`: if "true", the program will create a geotiff label image - only appropriate if the input image is also geotiff. Otherwise, "false" *Default = false*
 * `alpha`: the degree of transparency in merged image-output plots *Default = 0.5*
 * `fact`: the factor by which to downsample by imagery. *Default = 5* (this might seem large, but trust me the CRF is very cpu and memory intensive otherwise, and the results work with a large `fact` turn out ok. Reduce to get finer resolution results by be warned, it will take a lot longer. )
-* `compat_col`: compatibility value for the color/space-dependent term in the model, initial value for search. *Default = 20*
-* `theta_col`: standard deviation value for the color/space-dependent term in the model, initial value for search. *Default = 20*
+* `compat_col`: compatibility value for the color/space-dependent term in the model, initial value for search. *Default = 120*
+* `theta_col`: standard deviation value for the color/space-dependent term in the model, initial value for search. *Default = 100*
+* `optim`: if `True`, will search through more hyperparameters and will take longer. For problem imagery
 
 This file can be saved anywhere and called anything, but it must have the `.json` format extension.
 
@@ -210,7 +218,7 @@ If your mouse has a scroll wheel, you can use that to zoom in and out. Other nav
 ### Dense labeling happens after a manual annotation session
 After you have labeled each image tile for each image, the program will automatically use the CRF algorithm to carry out dense (i.e. per-pixel) labelling based on the labels you provided and the underlying image
 
-## Run merge.py
+## [Optionally] Run merge.py
 
 This script takes each individual mask image and merges them into one, keeping track of classes and class colours.
 
@@ -236,31 +244,29 @@ An example config file is provided:
 	  "im_order": "RGB",
 	  "alpha": 0.5,
 	  "num_bands": 3,
-	  "create_gtiff": "false",
+	  "create_gtiff": "true",
+	  "name": "2018_12_ldi_15cm_utm_0_0",
 
-	  "to_merge": ["water","veg","sand"],
+	  "to_merge": ["deep","anthro"],
 
-	  "classes1":
-	  {
-	   "water": "#3b81d0",
-	   "no_water": "#e35259"
+	  "classesA": {
+	    "deep": "#2f36aa",
+	    "whitewater": "#E317CE",
+	    "shallow": "#b3946b",
+	    "no_water": "#e35259"
 	  },
 
-	  "classes2":
-	  {
-	    "veg_dune_grass": "#6eaf29",
-	    "veg_other_grass":"#13dc19",
-	    "veg_woody": "#1a7120",
-	    "no_veg": "#e35259"
-	  },
-
-	  "classes3":
-	  {
-	    "sand": "#c0d03b",
-	    "roads": "#696669",
-	    "buildings": "#de3e5d",
-	    "people": "#74346b",
-	    "cars": "#dd9c1a"
+	  "classesB": {
+	    "anthro": "#aa352f",
+	    "vegetation": "#2faa58",
+	    "mud": "#aa8b2f",
+	    "sand": "#a0aa2f",
+	    "submerged_sediment": "#84aa2f",
+	    "gravel": "#186074",
+	    "boulder": "#4f7373",
+	    "wrack_peat": "#aa2f9c",
+	    "snow_ice": "#aa2f69",
+	    "shell": "#84b1b4"
 	   }
 	}
 
@@ -312,9 +318,7 @@ Command line arguments:
 
 * `-h`: print a help message to screen, then exit
 * `-c`: for specification of a `config` file. Optional - program will prompt you for it if it is missing from command line arguments
-* `-f`: pass a `.npy` file to the program (made using `doodler.py` or `doodler_optim.py` during a previous session). Optional
-
-Note that `doodler_optim.py` takes a lot longer to estimate the CRF solution compared to `doodler.py`, but the result should be better.
+* `-f`: pass a `.npy` file to the program (made using `doodler.py` during a previous session). Optional
 
 <!-- Why redo the labelling? You'll be more careful this time :)
 
