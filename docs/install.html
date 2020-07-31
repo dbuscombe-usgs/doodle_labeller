@@ -1,0 +1,153 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Getting Started · Doodle Labeller (Doodler)</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="**Warning**: `Doodler` is still in active development and `beta` version. Check back later or listen to announcements on [twitter](https://twitter.com/magic_walnut) for the first official release."/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Getting Started · Doodle Labeller (Doodler)"/><meta property="og:type" content="website"/><meta property="og:url" content="https://dbuscombe-usgs.github.io/doodle_labeller/"/><meta property="og:description" content="**Warning**: `Doodler` is still in active development and `beta` version. Check back later or listen to announcements on [twitter](https://twitter.com/magic_walnut) for the first official release."/><meta property="og:image" content="https://dbuscombe-usgs.github.io/doodle_labeller/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://dbuscombe-usgs.github.io/doodle_labeller/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/doodle_labeller/img/favicon.ico"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><link rel="alternate" type="application/atom+xml" href="https://dbuscombe-usgs.github.io/doodle_labeller/blog/atom.xml" title="Doodle Labeller (Doodler) Blog ATOM Feed"/><link rel="alternate" type="application/rss+xml" href="https://dbuscombe-usgs.github.io/doodle_labeller/blog/feed.xml" title="Doodle Labeller (Doodler) Blog RSS Feed"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/doodle_labeller/js/scrollSpy.js"></script><link rel="stylesheet" href="/doodle_labeller/css/main.css"/><script src="/doodle_labeller/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/doodle_labeller/"><img class="logo" src="/doodle_labeller/img/favicon.ico" alt="Doodle Labeller (Doodler)"/><h2 class="headerTitleWithLogo">Doodle Labeller (Doodler)</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive siteNavItemActive"><a href="/doodle_labeller/docs/install" target="_self">Get Started</a></li><li class="siteNavGroupActive"><a href="/doodle_labeller/docs/api" target="_self">Guide</a></li><li class=""><a href="/doodle_labeller/blog/" target="_self">Blog</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Getting Started</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle collapsible">Getting Started<span class="arrow"><svg width="24" height="24" viewBox="0 0 24 24"><path fill="#565656" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path><path d="M0 0h24v24H0z" fill="none"></path></svg></span></h3><ul class="hide"><li class="navListItem navListItemActive"><a class="navItem" href="/doodle_labeller/docs/install">Installation and Quick Start</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle collapsible">How to Doodle | Gallery<span class="arrow"><svg width="24" height="24" viewBox="0 0 24 24"><path fill="#565656" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path><path d="M0 0h24v24H0z" fill="none"></path></svg></span></h3><ul class="hide"><li class="navListItem"><a class="navItem" href="/doodle_labeller/docs/howto">How to Doodle</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle collapsible">API Reference<span class="arrow"><svg width="24" height="24" viewBox="0 0 24 24"><path fill="#565656" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path><path d="M0 0h24v24H0z" fill="none"></path></svg></span></h3><ul class="hide"><li class="navListItem"><a class="navItem" href="/doodle_labeller/docs/api">User guide</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1 id="__docusaurus" class="postHeaderTitle">Getting Started</h1></header><article><div><span><p><strong>Warning</strong>: <code>Doodler</code> is still in active development and <code>beta</code> version. Check back later or listen to announcements on <a href="https://twitter.com/magic_walnut">twitter</a> for the first official release.</p>
+<p><code>Doodler</code> is a <a href="https://www.python.org/">python</a> program that is designed to run within a <a href="https://docs.conda.io/en/latest/">conda</a> environment, accessed from the command line (terminal). It is designed to work on all modern Windows, Mac OS X, and Linux distributions, with python 3.6 or greater. It therefore requires some familiarity with process of navigating to a directory, and running a python script from a command line interface such as a <a href="https://docs.anaconda.com/anaconda/user-guide/getting-started/">Anaconda prompt</a> terminal window, <a href="https://docs.microsoft.com/en-us/powershell/scripting/overview?view=powershell-7">Powershell</a> terminal window, <a href="https://gitforwindows.org/">git bash</a> shell, or other terminal/command line interface.</p>
+<p>The following instructions assume you are using the popular (and free) <a href="https://www.anaconda.com/products/individual">Anaconda</a> or <a href="https://docs.conda.io/en/latest/miniconda.html">Miniconda</a> python distribution.</p>
+<h3><a class="anchor" aria-hidden="true" id="clone-the-github-repo"></a><a href="#clone-the-github-repo" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Clone the github repo</h3>
+<pre><code class="hljs">git <span class="hljs-keyword">clone</span> <span class="hljs-title">--depth</span> <span class="hljs-number">1</span> https://github.com/dbuscombe-usgs/doodle_labeller.git
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="create-a-conda-environment"></a><a href="#create-a-conda-environment" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Create a conda environment</h3>
+<p>If you are a regular conda user, now would be a good time to</p>
+<pre><code class="hljs">conda clean <span class="hljs-comment">--all</span>
+conda <span class="hljs-keyword">update</span> conda
+conda <span class="hljs-keyword">update</span> anaconda
+</code></pre>
+<p>Issue the following command from your Anaconda shell, power shell, or terminal window:</p>
+<pre><code class="hljs"><span class="hljs-selector-tag">conda</span> <span class="hljs-selector-tag">env</span> <span class="hljs-selector-tag">create</span> <span class="hljs-selector-tag">-f</span> <span class="hljs-selector-tag">doodler</span><span class="hljs-selector-class">.yml</span>
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="activate-the-conda-environment"></a><a href="#activate-the-conda-environment" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Activate the conda environment</h3>
+<p>Use this command to activate the environment, in order to use it</p>
+<pre><code class="hljs">conda <span class="hljs-built_in">activate</span> doodler
+</code></pre>
+<p>If you are a Windows user (only) who wishes to use unix style commands, install <code>m2-base</code></p>
+<pre><code class="hljs">conda <span class="hljs-keyword">install </span>m2-<span class="hljs-keyword">base
+</span></code></pre>
+<h3><a class="anchor" aria-hidden="true" id="add-images-to-dataimages"></a><a href="#add-images-to-dataimages" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Add images to <code>data/images</code></h3>
+<p>The program will assume you want to label all these images in one go. It's usually best to put 1-10 images in there at a time, depending on how much time you have in your doodler session</p>
+<h3><a class="anchor" aria-hidden="true" id="make-a-configjson-file"></a><a href="#make-a-configjson-file" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Make a <code>config.json</code> file</h3>
+<p>Several example config files are provided in the <code>config/</code> folder. A generic multi-label case would be similar to below:</p>
+<pre><code class="hljs">{
+  &quot;image_folder&quot; : &quot;data/images&quot;,
+  &quot;label_folder&quot;: &quot;data/label_images&quot;,
+  &quot;max_x_steps&quot;: 4,
+  &quot;max_y_steps&quot;: 4,
+  &quot;ref_im_scale&quot;: 0.8,
+  &quot;lw&quot;: 5,
+  &quot;im_order&quot;: &quot;RGB&quot;,
+  &quot;alpha&quot;: 0.5,
+  &quot;create_gtiff&quot;: &quot;false&quot;,
+  &quot;num_bands&quot;: 3,
+  &quot;apply_mask&quot;: &quot;None&quot;,
+  &quot;classes&quot;: {
+   &quot;vegetation&quot;: &quot;#0bec0b&quot;,
+   &quot;anthro&quot;: &quot;#f12063&quot;,
+   &quot;road_pavement&quot;: &quot;#7c7878&quot;,
+   &quot;sand&quot;: &quot;#c0d03b&quot;,
+   &quot;mud&quot;: &quot;#62894d&quot;,
+   &quot;marsh&quot;: &quot;#1c6d1d&quot;,
+   &quot;gravel&quot;: &quot;#395c27&quot;,
+   &quot;boulders&quot;: &quot;#94925c&quot;,
+   &quot;snow_ice&quot;: &quot;#f6faf6&quot;,
+   &quot;wrack_peat&quot;: &quot;#23ad96&quot;,
+   &quot;indeterminate&quot;: &quot;#9e289c&quot;
+   }
+}
+</code></pre>
+<p>where the <em>required</em> arguments are:</p>
+<ul>
+<li><code>image_folder</code> : ordinarily this would be &quot;data/images&quot; but could be a relative path to any relative directory</li>
+<li><code>label_folder</code>: see the above but for &quot;data/label_images&quot;</li>
+<li><code>max_x_steps</code>: number of tiles to split the image up in x direction (suggested range: 1- 6, depending on image size/complexity)</li>
+<li><code>max_y_steps</code>: number of tiles to split the image up in y direction (suggested range: 1- 6, depending on image size/complexity)</li>
+<li><code>ref_im_scale</code>: the proportion of the detected screen size to make the window (suggested: 0.5 -- 1.0)</li>
+<li><code>lw</code>: initial pen width in pixels. this can be changed on the fly (suggested range: 5 - 10, depending on image size)</li>
+<li><code>im_order</code>: either &quot;RGB&quot; or &quot;BGR&quot;, depending on what type of imagery you have (RGB is more common)</li>
+<li><code>classes</code>: a dictionary of class names and associated colours as hex codes (starting with <code>#</code>). There are various online colour pickers including <a href="https://htmlcolorcodes.com/">this one</a></li>
+</ul>
+<p>and the optional arguments and their default values:</p>
+<ul>
+<li><code>apply_mask</code>: either <code>None</code> (if no pre-masking) or a list of label names with which to mask the image. These label images should already exist <em>Default = None</em></li>
+<li><code>num_bands</code>: the number of bands in the input imagery (e.g. 1, 3, or 4). <em>Default = 3</em></li>
+<li><code>create_gtiff</code>: if &quot;true&quot;, the program will create a geotiff label image - only appropriate if the input image is also geotiff. Otherwise, &quot;false&quot; <em>Default = false</em></li>
+<li><code>alpha</code>: the degree of transparency in merged image-output plots <em>Default = 0.5</em></li>
+<li><code>fact</code>: the factor by which to downsample by imagery. <em>Default = 5</em> (this might seem large, but trust me the CRF is very cpu and memory intensive otherwise, and the results work with a large <code>fact</code> turn out ok. Reduce to get finer resolution results by be warned, it will take a lot longer. )</li>
+<li><code>compat_col</code>: compatibility value for the color/space-dependent term in the model, initial value for search. <em>Default = 120</em></li>
+<li><code>theta_col</code>: standard deviation value for the color/space-dependent term in the model, initial value for search. <em>Default = 100</em></li>
+<li><code>optim</code>: if <code>True</code>, will search through more hyperparameters and will take longer. For problem imagery</li>
+</ul>
+<p>This file can be saved anywhere and called anything, but it must have the <code>.json</code> format extension.</p>
+<h3><a class="anchor" aria-hidden="true" id="run-doodlerpy"></a><a href="#run-doodlerpy" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Run <code>doodler.py</code></h3>
+<p>Assuming you have already activated the conda environment (<code>conda activate doodler</code> - see above) ...</p>
+<p>you will need to cd to the directory you will be working in, for example:</p>
+<pre><code class="hljs"><span class="hljs-keyword">cd</span> <span class="hljs-string">/my_python_programs/doodle_labeller</span>
+</code></pre>
+<p>Then run it with:</p>
+<pre><code class="hljs"><span class="hljs-selector-tag">python</span> <span class="hljs-selector-tag">doodler</span><span class="hljs-selector-class">.py</span> <span class="hljs-selector-tag">-c</span> <span class="hljs-selector-tag">config_file</span><span class="hljs-selector-class">.json</span>
+</code></pre>
+<p>or optionally (to manually navigate to and select a config file)</p>
+<pre><code class="hljs"><span class="hljs-keyword">python</span> doodler.<span class="hljs-keyword">py</span>
+</code></pre>
+<p>or optionally (to pass a previous annotation filr in <code>.npy</code> format)</p>
+<pre><code class="hljs">python doodler.py -c <span class="hljs-type">path</span>/<span class="hljs-keyword">to</span>/config_file.json -f <span class="hljs-type">path</span>/<span class="hljs-keyword">to</span>/npy_file
+</code></pre>
+<p>Command line arguments:</p>
+<ul>
+<li><code>-h</code>: print a help message to screen, then exit</li>
+<li><code>-c</code>: for specification of a <code>config</code> file. Optional - if this is missing, the program will prompt you to select a config file</li>
+<li><code>-f</code>: pass a <code>.npy</code> file to the program (made using <code>doodler.py</code> during a previous session). Optional</li>
+</ul>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-next button" href="/doodle_labeller/docs/howto"><span>How to Doodle</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/doodle_labeller/" class="nav-home"><img src="/doodle_labeller/img/favicon.ico" alt="Doodle Labeller (Doodler)" width="66" height="58"/></a><div><h5>Docs</h5><a href="/doodle_labeller/docs/en/install.html">Getting Started</a><a href="/doodle_labeller/docs/en/howto.html">How to Doodle</a><a href="/doodle_labeller/docs/en/api.html">Full user guide</a></div><div><h5>Community</h5><a href="https://stackoverflow.com/questions/tagged/" target="_blank" rel="noreferrer noopener">Stack Overflow</a><a href="https://twitter.com/magic_walnut" target="_blank" rel="noreferrer noopener">Twitter</a></div><div><h5>More</h5><a href="/doodle_labeller/blog">Blog</a><a href="https://github.com/dbuscombe-usgs/doodle_labeller">GitHub</a><a class="github-button" data-icon="octicon-star" data-count-href="/dbuscombe-usgs/docusaurus/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a><div class="social"><a href="https://twitter.com/magic_walnut" class="twitter-follow-button">Follow @magic_walnut</a></div></div></section><a href="https://mardascience.com/" target="_blank" rel="noreferrer noopener" class="fbOpenSource"><img src="/doodle_labeller/img/dash-logo-new.png" alt="Marda Science" width="170" height="45"/></a><section class="copyright">Copyright © 2020 Marda Science, LLC</section></footer></div><script>window.twttr=(function(d,s, id){var js,fjs=d.getElementsByTagName(s)[0],t=window.twttr||{};if(d.getElementById(id))return t;js=d.createElement(s);js.id=id;js.src='https://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js, fjs);t._e = [];t.ready = function(f) {t._e.push(f);};return t;}(document, 'script', 'twitter-wjs'));</script></body></html>
