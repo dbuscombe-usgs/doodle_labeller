@@ -12,7 +12,7 @@ np.seterr(divide='ignore', invalid='ignore')
 
 ##  progress bar (bcause te quiero demasiado ...)
 from tqdm import tqdm
-#from scipy.stats import mode as md
+from scipy.stats import mode as md
 
 import pydensecrf.densecrf as dcrf
 from pydensecrf.utils import create_pairwise_bilateral, unary_from_labels
@@ -28,6 +28,15 @@ from skimage.morphology import disk, erosion
 from skimage.util import img_as_ubyte
 
 cv2.setUseOptimized(True)
+
+# =========================================================
+def rescale(dat,mn,mx):
+   """
+   rescales an input dat between mn and mx
+   """
+   m = np.min(dat.flatten())
+   M = np.max(dat.flatten())
+   return (mx-mn)*(dat-m)/(M-m)+mn
 
 # =========================================================
 def DoCrf(file, config, name, optim):
@@ -145,6 +154,49 @@ def getCRF(img, Lc, config): #, optim):
        # do the same for the label image
        Lc = Lc[::fact,::fact]
 
+       if config['do_stack']=="true":
+           R = img[:,:,0]
+           G = img[:,:,1]
+           B = img[:,:,2]
+           R[R<1]=1; G[G<1]=1; B[B<1]=1;
+           VARI = (G-R)/(G+R-B)
+           NEXG = (2*G - R - B) / (G+R+B)
+           NGRDI = (G-R)/(G+R)
+           VARI[np.isinf(VARI)] = 1e-2
+           NEXG[np.isinf(NEXG)] = 1e-2
+           NGRDI[np.isinf(NGRDI)] = 1e-2
+           VARI[np.isnan(VARI)] = 1e-2
+           NEXG[np.isnan(NEXG)] = 1e-2
+           NGRDI[np.isnan(NGRDI)] = 1e-2
+           VARI[VARI==0] = 1e-2
+           NEXG[NEXG==0] = 1e-2
+           NGRDI[NGRDI==0] = 1e-2
+
+           VARI = rescale(np.log(VARI),0,255)
+           NEXG = rescale(np.log(NEXG),0,255)
+           NGRDI = rescale(np.log(NGRDI),0,255)
+
+           STACK = np.dstack((R,G,B,VARI,NEXG,NGRDI)).astype(np.int)
+           del R, G, B, VARI, NEXG, NGRDI
+
+       # plt.subplot(221); plt.imshow(img)
+       # plt.axis('off'); plt.title('RGB', fontsize=8)
+       # plt.subplot(222); plt.imshow(VARI)
+       # plt.axis('off'); plt.title('log(VARI) = log((G-R)/(G+R-B))', fontsize=8)
+       # plt.subplot(223); plt.imshow(NEXG)
+       # plt.axis('off'); plt.title('log(NEXG) = log((2G-R-B)/(G+R+B))', fontsize=8)
+       # plt.subplot(224); plt.imshow(NGRDI)
+       # plt.axis('off'); plt.title('log(NGRDI) = log((G-R)/(G+R))', fontsize=8)
+       # plt.savefig('ex_6band_RGB.png'); plt.close()
+       #
+       # plt.subplot(121)
+       # plt.imshow(img)
+       # plt.axis('off'); plt.title('RGB', fontsize=8)
+       # plt.subplot(122)
+       # plt.imshow(np.dstack((VARI,NEXG,NGRDI)).astype(np.int))
+       # plt.axis('off'); plt.title('VARI-NEXG-NGRDI false color', fontsize=8)
+       # plt.savefig('ex_3band_falsecolor.png'); plt.close()
+
        # get the new shapes
        H = img.shape[0]
        W = img.shape[1]
@@ -155,11 +207,11 @@ def getCRF(img, Lc, config): #, optim):
 
        R = []; P = []
 
-    # 4. the hyperparameters `theta_col` and `compat_col` are modified by the factors described above.
-    # The 10 `optim` factors are .25, .33, .5, .75, 1, 1.33, 2, 3, and 4, therefore if `theta_col` is 100,
-    # the program would cycle through creating a CRF realization
-    # based on  `theta_col` = `compat_col` = 25, then 33, 50, 75, 100, 133, 200, 300, and 400.
-    # The 5 `optim` factors are .25,.5,1,2, and 4.
+        # 4. the hyperparameters `theta_col` and `compat_col` are modified by the factors described above.
+        # The 10 `optim` factors are .25, .33, .5, .75, 1, 1.33, 2, 3, and 4, therefore if `theta_col` is 100,
+        # the program would cycle through creating a CRF realization
+        # based on  `theta_col` = `compat_col` = 25, then 33, 50, 75, 100, 133, 200, 300, and 400.
+        # The 5 `optim` factors are .25,.5,1,2, and 4.
 
        ## loop through the 'theta' values (half, given, and double)
        for mult in tqdm(search):
@@ -172,20 +224,29 @@ def getCRF(img, Lc, config): #, optim):
                          kernel=dcrf.DIAG_KERNEL,
                          normalization=dcrf.NORMALIZE_SYMMETRIC)
 
-          feats = create_pairwise_bilateral(
-                                      sdims=(theta_col*mult, theta_col*mult),
-                                      schan=(scale,
-                                             scale,
-                                             scale),
-                                      img=img,
-                                      chdim=2)
+          if config['do_stack']=="true":
+              feats = create_pairwise_bilateral(
+                                          sdims=(theta_col*mult, theta_col*mult),
+                                          schan=(scale,
+                                                 scale,
+                                                 scale),
+                                          img=STACK, #img,
+                                          chdim=2)
+          else:
+              feats = create_pairwise_bilateral(
+                                          sdims=(theta_col*mult, theta_col*mult),
+                                          schan=(scale,
+                                                 scale,
+                                                 scale),
+                                          img=img,
+                                          chdim=2)
 
           d.addPairwiseEnergy(feats, compat=compat_col,kernel=dcrf.DIAG_KERNEL,normalization=dcrf.NORMALIZE_SYMMETRIC)
           Q = d.inference(n_iter)
           #print("KL-divergence at {}: {}".format(i, d.klDivergence(Q)))
           R.append(1+np.argmax(Q, axis=0).reshape((H, W)).astype(np.uint8))
 
-          preds = np.array(Q, dtype=np.float32).reshape((len(label_lines)+1, H, W)).transpose(1, 2, 0) ##labels+1
+          preds = np.array(Q, dtype=np.float32).reshape((len(label_lines)+1, H, W)).transpose(1, 2, 0)
           P.append(preds)
 
           del Q
@@ -194,10 +255,9 @@ def getCRF(img, Lc, config): #, optim):
 
        R = list(R)
 
-
-        # 5. The predictions (softmax scores based on normalized logits)
-        # per class are computed as the weighted average of the per-class
-        # predictions compiled over the number of hyperparameter factors.
+       # 5. The predictions (softmax scores based on normalized logits)
+       # per class are computed as the weighted average of the per-class
+       # predictions compiled over the number of hyperparameter factors.
 
        if len(label_lines)==2: #<len(search):
           try:
@@ -233,9 +293,8 @@ def getCRF(img, Lc, config): #, optim):
        if 1+len(label_lines) != np.asarray(preds).shape[-1]:
           preds = np.swapaxes(preds,0,-1)
 
-    # 6. Each per-class prediction raster is then median-filtered using a disk-shaped
-    # structural element with a radius of 15*(M/(3681)) pixels
-
+       # 6. Each per-class prediction raster is then median-filtered using a disk-shaped
+       # structural element with a radius of 15*(M/(3681)) pixels
        for k in range(len(label_lines)):
          N = np.round(10*(Worig/(3681))).astype('int') #11 when ny=3681
          if (len(label_lines)==2):
@@ -245,12 +304,12 @@ def getCRF(img, Lc, config): #, optim):
             preds[:,:,k] = median(img_as_ubyte(preds[:,:,k]), disk(N))
             preds[:,:,k] = preds[:,:,k]/np.max(preds[:,:,k])
 
-        # 7. To make the final classification, if the per-class prediction is > .5 (for binary)
-        # or > 1/N where N=number of classes (for multiclass), the pixel is encoded that label.
-        # This works in order of classes listed in the config file, so a latter class
-        # could override a former one. Where no grid cell is encoded
-        #  with a label, such as where the above criteria are not met,
-        #  the label is the argument maximum for for that cell in the stack.
+       # 7. To make the final classification, if the per-class prediction is > .5 (for binary)
+       # or > 1/N where N=number of classes (for multiclass), the pixel is encoded that label.
+       # This works in order of classes listed in the config file, so a latter class
+       # could override a former one. Where no grid cell is encoded
+       #  with a label, such as where the above criteria are not met,
+       #  the label is the argument maximum for for that cell in the stack.
        res = np.zeros((H,W))
        counter = 1
        for k in range(len(label_lines)):
@@ -312,36 +371,6 @@ def getCRF(img, Lc, config): #, optim):
           N = np.round(5*(Worig/(3681))).astype('int') #11 when ny=3681
           print("Applying median filter of size: %i" % (N))
           res = median(res.astype(np.uint8), disk(N))
-
-       #if len(label_lines)==2:
-           # N = np.round(5*(Worig/(3681))).astype('int')
-           # res = ~erosion(~res, disk(N))
-
-       # U = unary_from_labels(res.astype('int'),
-       #                    len(label_lines) + 1,
-       #                    gt_prob=prob)
-       #
-       # d = dcrf.DenseCRF2D(Horig, Worig, len(label_lines) + 1)
-       # d.setUnaryEnergy(U)
-       #
-       # # to add the color-independent term, where features are the locations only:
-       # d.addPairwiseGaussian(sxy=(theta_spat, theta_spat),
-       #               compat=compat_spat,
-       #               kernel=dcrf.DIAG_KERNEL,
-       #               normalization=dcrf.NORMALIZE_SYMMETRIC)
-       #
-       # feats = create_pairwise_bilateral(
-       #                            sdims=(theta_col, theta_col),
-       #                            schan=(scale,
-       #                                   scale,
-       #                                   scale),
-       #                            img=img,
-       #                            chdim=2)
-       #
-       # d.addPairwiseEnergy(feats, compat=compat_col,kernel=dcrf.DIAG_KERNEL,normalization=dcrf.NORMALIZE_SYMMETRIC)
-       # Q = d.inference(n_iter)
-       # #print("KL-divergence at {}: {}".format(i, d.klDivergence(Q)))
-       # res = 1+np.argmax(Q, axis=0).reshape((Horig, Worig)).astype(np.uint8)
 
     return res, p, probs_per_class.astype('float16')
 
@@ -599,7 +628,7 @@ def Screen():
     return screen_size
 
 # =========================================================
-def OpenImage(image_path, im_order, num_bands):
+def OpenImage(image_path, im_order):
     """
     Returns the image in numpy array format
     Input:
@@ -610,6 +639,30 @@ def OpenImage(image_path, im_order, num_bands):
     Output:
         numpy array of image 2D or 3D or 4+D
     """
+
+    with rasterio.open(image_path) as src:
+        # How many bands does this image have?
+        layer = src.read()
+
+        if layer.shape[0] == 3:
+            num_bands = src.count
+            print('Number of bands detected in image: {n}\n'.format(n=num_bands))
+            del layer
+
+        elif layer.shape[0] == 4:
+
+            img = tifffile.imread(image_path)
+            img = img_as_ubyte(img)
+            val, _ = md(img[:,:,-1].flatten()) # get mode value
+            del img, layer
+
+            if val>254: #if val is 255 (type agnositic to use >254 instead of ==255)
+                num_bands = 3
+            else:
+                num_bands = src.count
+            print('Number of bands detected in image: {n}\n'.format(n=num_bands))
+
+    ## ok, we've dealt with every case and determined the number of bands
 
     if (image_path.lower()[-3:] == 'tif') | (image_path.lower()[-4:] == 'tiff'):
         if num_bands>3:
@@ -848,11 +901,6 @@ def PlotAndSave(img, resr, Lc, prob, name, config, class_str, profile):
                      cmap=cmap,
                      alpha=alpha_percent, interpolation='nearest',
                      vmin=1, vmax=len(config['classes'])+1)
-    divider = make_axes_locatable(ax1)
-    cax = divider.append_axes("right", size="5%", pad="2%")
-    cb=plt.colorbar(im2, cax=cax)
-    cb.set_ticks(0.5 + np.arange(len(config['classes']) + 1))
-    cb.ax.set_yticklabels(config['classes'], fontsize=6)
 
 
     ax1 = fig.add_subplot(122) #sp + 1)
@@ -915,386 +963,3 @@ def PlotAndSave(img, resr, Lc, prob, name, config, class_str, profile):
     plt.savefig(outfile,
                 dpi=300, bbox_inches = 'tight')
     del fig; plt.close()
-
-
-
-#
-# # =========================================================
-# def getCRF_optim(img, Lc, config): #label_lines, fact):
-#     """
-#     Uses a dense CRF model to refine labels based on sparse labels and underlying image
-#     Input:
-#         img: 3D ndarray image
-# 		Lc: 2D ndarray label image (sparse or dense)
-# 		label_lines: list of class names
-# 	Hard-coded variables:
-#         kernel_bilateral: DIAG_KERNEL kernel precision matrix for the colour-dependent term
-#             (can take values CONST_KERNEL, DIAG_KERNEL, or FULL_KERNEL).
-#         normalisation_bilateral: NORMALIZE_SYMMETRIC normalisation for the colour-dependent term
-#             (possible values are NO_NORMALIZATION, NORMALIZE_BEFORE, NORMALIZE_AFTER, NORMALIZE_SYMMETRIC).
-#         kernel_gaussian: DIAG_KERNEL kernel precision matrix for the colour-independent
-#             term (can take values CONST_KERNEL, DIAG_KERNEL, or FULL_KERNEL).
-#         normalisation_gaussian: NORMALIZE_SYMMETRIC normalisation for the colour-independent term
-#             (possible values are NO_NORMALIZATION, NORMALIZE_BEFORE, NORMALIZE_AFTER, NORMALIZE_SYMMETRIC).
-#     Output:
-#         res : CRF-refined 2D label image
-#     """
-#
-#     label_lines = config['classes']
-#     fact = config['fact']
-#
-#     # initial parameters
-#     n_iter = 10
-#     scale = 1+(10 * (np.array(img.shape).max() / 3681))
-#
-#     compat_col = config['compat_col'] #20
-#     theta_col = config['theta_col'] #20
-#     theta_spat = 3
-#     prob = 0.8
-#     compat_spat = 3
-#
-#     search = [.25,.33,.5,.75,1,1.33,2,3,4]
-#
-#     ## relative frequency of annotations
-#     rel_freq = np.bincount(Lc.flatten())#, minlength=len(label_lines)+1)
-#     rel_freq[0] = 0
-#     rel_freq = rel_freq / rel_freq.sum()
-#     rel_freq[rel_freq<1e-4] = 1e-4
-#     rel_freq = rel_freq / rel_freq.sum()
-#
-#
-#     if np.mean(img)<1:
-#        H = img.shape[0]
-#        W = img.shape[1]
-#        res = np.zeros((H,W)) * np.mean(Lc)
-#
-#     else:
-#
-#        # if image is 2D, make it 3D by stacking bands
-#        if np.ndim(img) == 2:
-#           # decimate by factor first
-#           img = img[::fact,::fact, :]
-#           img = np.dstack((img, img, img))
-#
-#        # get original image shapes
-#        Horig = img.shape[0]
-#        Worig = img.shape[1]
-#
-#        # decimate by factor by taking only every other row and column
-#        img = img[::fact,::fact, :]
-#        # do the same for the label image
-#        Lc = Lc[::fact,::fact]
-#
-#        # get the new shapes
-#        H = img.shape[0]
-#        W = img.shape[1]
-#
-#        U = unary_from_labels(Lc.astype('int'),
-#                           len(label_lines) + 1,
-#                           gt_prob=prob)
-#
-#        R = []; P = []
-#
-#        ## loop through the 'theta' values (half, given, and double)
-#        for mult in tqdm(search):
-#           d = dcrf.DenseCRF2D(H, W, len(label_lines) + 1)
-#           d.setUnaryEnergy(U)
-#
-#           # to add the color-independent term, where features are the locations only:
-#           d.addPairwiseGaussian(sxy=(theta_spat, theta_spat),compat=compat_spat,kernel=dcrf.DIAG_KERNEL,normalization=dcrf.NORMALIZE_SYMMETRIC)
-#
-#           feats = create_pairwise_bilateral(
-#                                       sdims=(theta_col*mult, theta_col*mult),
-#                                       schan=(scale,
-#                                              scale,
-#                                              scale),
-#                                       img=img,
-#                                       chdim=2)
-#
-#           d.addPairwiseEnergy(feats, compat=compat_col,kernel=dcrf.DIAG_KERNEL,normalization=dcrf.NORMALIZE_SYMMETRIC)
-#           Q = d.inference(n_iter)
-#           #print("KL-divergence at {}: {}".format(i, d.klDivergence(Q)))
-#           R.append(1+np.argmax(Q, axis=0).reshape((H, W)).astype(np.uint8))
-#
-#           preds = np.array(Q, dtype=np.float32).reshape((len(label_lines)+1, H, W)).transpose(1, 2, 0) ##labels+1
-#           P.append(preds)
-#
-#           del Q
-#
-#        ##res = np.round(np.median(R, axis=0))
-#
-#        R = list(R)
-#
-#        try:
-#           preds = np.average(P, axis=-1, weights = 1/rel_freq)
-#        except:
-#           print("using unweighted average")
-#           preds = np.median(P, axis=-1)
-#
-#        del P
-#
-#        res = np.zeros((H,W))
-#        counter = 1
-#        for k in range(len(label_lines)):
-#          res[preds[k,:,:]>=(1/len(label_lines) )] = counter
-#          counter += 1
-#
-#        # _, cnt = md(np.asarray(R, dtype='uint8'),axis=0)
-#        # res2 = np.squeeze(_)
-#        # cnt = np.squeeze(cnt)
-#        # p = cnt/len(R)
-#
-#        p = 1-(np.std(preds, axis=0)/len(label_lines))
-#
-#        del R #, cnt
-#
-#
-#        if fact>1:
-#           res = np.array(Image.fromarray(res.astype(np.uint8)).resize((Worig, Horig),
-#                 resample=1))
-#
-#           p = np.array(Image.fromarray((100*p).astype(np.uint8)).resize((Worig, Horig),
-#                 resample=1))/100
-#           if len(label_lines)==2:
-#              res[res==1] = 0
-#
-#           preds2 = np.zeros((preds.shape[0],Horig,Worig))
-#           for k in range(preds.shape[0]):
-#              preds2[k,:,:] = np.array(
-#                             Image.fromarray((100*preds[:,:,k]).astype(np.uint8)).resize((Worig, Horig),
-#                             resample=1)
-#                             )
-#           del preds
-#           preds = preds2.copy()
-#           del preds2
-#           p[p>1] = 1
-#           p[p<0]= 0
-#           preds[preds>1] = 1
-#           preds[preds<0]= 0
-#
-#        if (config['medfilt']=="true") or (len(label_lines)==2):
-#           ## median filter to remove remaining high-freq spatial noise (radius of N pixels)
-#           N = np.round(5*(Worig/(3681))).astype('int') #11 when ny=3681
-#           print("Applying median filter of size: %i" % (N))
-#           res = median(res.astype(np.uint8), disk(N))
-#
-#        #if len(label_lines)==2:
-#            # N = np.round(5*(Worig/(3681))).astype('int')
-#            # res = ~erosion(~res, disk(N))
-#
-#
-#     return res, p, preds
-
-
-
-# # =========================================================
-# def getCRF_optim(img, Lc, num_classes, fact):
-#     """
-#     Uses a dense CRF model to refine labels based on sparse labels and underlying image
-#     Input:
-#         img: 3D ndarray image
-# 		Lc: 2D ndarray label image (sparse or dense)
-# 		label_lines: list of class names
-# 	Hard-coded variables:
-#         kernel_bilateral: DIAG_KERNEL kernel precision matrix for the colour-dependent term
-#             (can take values CONST_KERNEL, DIAG_KERNEL, or FULL_KERNEL).
-#         normalisation_bilateral: NORMALIZE_SYMMETRIC normalisation for the colour-dependent term
-#             (possible values are NO_NORMALIZATION, NORMALIZE_BEFORE, NORMALIZE_AFTER, NORMALIZE_SYMMETRIC).
-#         kernel_gaussian: DIAG_KERNEL kernel precision matrix for the colour-independent
-#             term (can take values CONST_KERNEL, DIAG_KERNEL, or FULL_KERNEL).
-#         normalisation_gaussian: NORMALIZE_SYMMETRIC normalisation for the colour-independent term
-#             (possible values are NO_NORMALIZATION, NORMALIZE_BEFORE, NORMALIZE_AFTER, NORMALIZE_SYMMETRIC).
-#     Output:
-#         res : CRF-refined 2D label image
-#     """
-#
-#     # initial parameters
-#     theta_col = config["theta_col"] ##20
-#     theta_spat = 3
-#     n_iter = 10
-#
-#     scale = 1+(10 * (np.array(img.shape).max() / 3681)) #20
-#
-#     prob = 0.8 #0.9
-#     compat_col = config["theta_col"] ##20
-#     compat_spat = 3
-#
-#     ## relative frequency of annotations
-#     rel_freq = np.bincount(Lc.flatten())
-#     rel_freq[0] = 0
-#     rel_freq = rel_freq / rel_freq.sum()
-#     rel_freq[rel_freq<1e-4] = 1e-4
-#     rel_freq = rel_freq / rel_freq.sum()
-#
-#
-#     #if the image or label is empty ...
-#     if ((np.mean(img)<1.) or (np.std(Lc)==0.)):
-#        H = img.shape[0]
-#        W = img.shape[1]
-#        res = np.zeros((H,W)) * np.mean(Lc)
-#        return res, np.nan, np.nan
-#
-#     else:
-#
-#        thres = int(config['thres_size_1chunk']/2)
-#
-#        apply_fact = (img.shape[0] > thres) or (img.shape[1] > thres)
-#        #print("apply_fact: %i" % (apply_fact))
-#
-#        # if image is 2D, make it 3D by stacking bands
-#        if np.ndim(img) == 2:
-#           # decimate by factor first
-#           if apply_fact:
-#              img = img[::fact,::fact, :]
-#           img = np.dstack((img, img, img))
-#
-#        # get original image shapes
-#        Horig = img.shape[0]
-#        Worig = img.shape[1]
-#
-#        # decimate by factor by taking only every other row and column
-#        if apply_fact:
-#           img = img[::fact,::fact, :]
-#           # do the same for the label image
-#           Lc = Lc[::fact,::fact]
-#
-#        # get the new shapes
-#        H = img.shape[0]
-#        W = img.shape[1]
-#
-#        # define some factors to apply to the nominal thetas and mus
-#        search = [1/4,1/3,1/2,3/4,1,4/3,2,3,4]
-#        #search = [.25,.5,1,2,4]
-#
-#        R = [] #for label realization
-#        #P = [] #for theta parameters
-#        #K = [] #for kl-divergence statistic
-#        P = []
-#
-#        mult_spat = 1
-#
-#        ## loop through the 'theta' values (quarter, half, given, and double, quadruple)
-#        for mult_col_compat in tqdm(search):
-#           for mult_spat_compat in [1]:
-#              for mult_col in search:
-#                 for mult_prob in [1]:
-#
-#                    #create (common to all experiments) unary potentials for each class
-#                    U = unary_from_labels(Lc.astype('int'),
-#                           num_classes + 1,
-#                           gt_prob=np.min((mult_prob*prob,.999)))
-#
-#                    d = dcrf.DenseCRF2D(H, W, num_classes + 1)
-#
-#                    d.setUnaryEnergy(U)
-#
-#                    # to add the color-independent term, where features are the locations only:
-#                    d.addPairwiseGaussian(sxy=(int(mult_spat*theta_spat),
-#                                 int(mult_spat*theta_spat)), ##scaling per dimension (smoothness)
-#                                 compat=mult_spat_compat*compat_spat, ##scaling per channel
-#                                 kernel=dcrf.DIAG_KERNEL, normalization=dcrf.NORMALIZE_SYMMETRIC)
-#
-#                    #spatial feature extractor
-#                    feats = create_pairwise_bilateral(
-#                                       sdims=(int(mult_col*theta_col), int(mult_col*theta_col)), #scaling per dimension
-#                                       schan=(scale, #theta_beta = scaling per channel (smoothness)
-#                                              scale,
-#                                              scale),
-#                                       img=img,
-#                                       chdim=2)
-#
-#                    #color feature extractor
-#                    d.addPairwiseEnergy(feats, compat=mult_col_compat*compat_col,
-#                         kernel=dcrf.DIAG_KERNEL,normalization=dcrf.NORMALIZE_SYMMETRIC)
-#
-#                    #do inference
-#                    Q = d.inference(n_iter)
-#
-#                    #K.append(d.klDivergence(Q))
-#
-#                    R.append(np.argmax(Q, axis=0).reshape((H, W)).astype(np.uint8))
-#                    #P.append([mult_col, mult_col_compat]) #mult_spat, mult_spat_compat, mult_prob
-#
-#                    preds = np.array(Q, dtype=np.float32).reshape((num_classes+1, H, W)).transpose(1, 2, 0) ##labels+1
-#                    P.append(preds)
-#
-#                    del Q, d
-#
-#        ##res = np.round(np.median(R, axis=0))
-#
-#        R = list(R)
-#
-#        try:
-#           preds = np.average(P, axis=-1, weights = np.tile((1/rel_freq), (num_classes+1, len(search) ) ))
-#        except:
-#           print("using unweighted average")
-#           preds = np.median(P, axis=0)
-#        del P
-#
-#        res = np.zeros((H,W))
-#        counter = 1
-#        for k in range(num_classes):
-#            res[preds[:,:,k]>=(1/num_classes )] = counter
-#            counter += 1
-#
-#        _, cnt = md(np.asarray(R, dtype='uint8'),axis=0)
-#        #res2 = np.squeeze(res)
-#        cnt = np.squeeze(cnt)
-#        p = cnt/len(R)
-#
-#        del cnt, R, U
-#
-#        if apply_fact:
-#           res = np.array(Image.fromarray(res.astype(np.uint8)).resize((Worig, Horig), \
-#                          resample=1))
-#           p = np.array(Image.fromarray((100*p).astype(np.uint8)).resize((Worig, Horig),
-#                 resample=1))/100
-#           preds = np.array(Image.fromarray((100*preds).astype(np.uint8)).resize((Worig, Horig),
-#                resample=1))
-#           p[p>1] = 1
-#           p[p<0]= 0
-#           preds[preds>1] = 1
-#           preds[preds<0]= 0
-#
-#        res += 1 #avoid averaging over zero class
-#
-#        # median filter to remove remaining high-freq spatial noise (radius of N pixels)
-#        N = np.round(5*(Worig/(7362/fact))).astype('int')
-#        #print("median filter size: %i" % (N))
-#        res = median(res.astype(np.uint8), disk(N))
-#
-#        if num_classes==2:
-#            N = np.round(5*(Worig/(3681))).astype('int')
-#            res = erosion(res, disk(N))
-#
-#     return res, mult_col*theta_col, mult_col_compat*compat_col, p, preds #, mult_prob*prob
-#
-
-
-#
-# # =========================================================
-# def DoCrf_optim(file, config, name):
-#     """
-#     Loads imagery and labels from npz file, and calls getCRF
-#     Input:
-#         file:
-# 		name:
-# 		config:
-#     Output:
-#         res:
-#     """
-#     data = np.load(file)
-#
-#     #img = data['image']
-#     #Lc = data['label']
-#     #num_classes = len(config['classes'])
-#     #fact = config['fact']
-#
-#     res, p, preds = getCRF(data['image'],
-#                             data['label'], config, True)
-#
-#     if np.all(res)==254:
-#        res *= 0
-#
-#     return res, p, preds
-#

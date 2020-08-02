@@ -1,0 +1,25 @@
+{
+  "image_folder" : "data/images",
+  "label_folder": "data/label_images",
+  "max_x_steps": 4,
+  "max_y_steps": 4,
+  "ref_im_scale": 0.8,
+  "lw": 10,
+  "im_order": "RGB",
+  "alpha": 0.5,
+  "create_gtiff": "false",
+  "apply_mask": "None",
+  "medfilt": "false",
+  "fact": 3,
+  "theta_col": 40,
+  "compat_col": 80,
+  "optim": "true",
+  "classes": {
+    "sand": "#a0aa2f",
+    "gravel": "#186074",
+    "cobble": "#4f7373",
+    "organic": "#aa2f9c",
+    "scalebar": "#84b1b4",
+    "other": "#aa2f69"
+   }
+}

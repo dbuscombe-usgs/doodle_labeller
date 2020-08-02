@@ -1,0 +1,334 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>User guide · Doodle Labeller (Doodler)</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="## Reference"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="User guide · Doodle Labeller (Doodler)"/><meta property="og:type" content="website"/><meta property="og:url" content="https://dbuscombe-usgs.github.io/doodle_labeller/"/><meta property="og:description" content="## Reference"/><meta property="og:image" content="https://dbuscombe-usgs.github.io/doodle_labeller/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://dbuscombe-usgs.github.io/doodle_labeller/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/doodle_labeller/img/favicon.ico"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><link rel="alternate" type="application/atom+xml" href="https://dbuscombe-usgs.github.io/doodle_labeller/blog/atom.xml" title="Doodle Labeller (Doodler) Blog ATOM Feed"/><link rel="alternate" type="application/rss+xml" href="https://dbuscombe-usgs.github.io/doodle_labeller/blog/feed.xml" title="Doodle Labeller (Doodler) Blog RSS Feed"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/doodle_labeller/js/scrollSpy.js"></script><link rel="stylesheet" href="/doodle_labeller/css/main.css"/><script src="/doodle_labeller/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/doodle_labeller/"><img class="logo" src="/doodle_labeller/img/favicon.ico" alt="Doodle Labeller (Doodler)"/><h2 class="headerTitleWithLogo">Doodle Labeller (Doodler)</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/doodle_labeller/docs/install" target="_self">Get Started</a></li><li class="siteNavGroupActive siteNavItemActive"><a href="/doodle_labeller/docs/api" target="_self">Guide</a></li><li class=""><a href="/doodle_labeller/blog/" target="_self">Blog</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>User Guide</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle collapsible">Getting Started<span class="arrow"><svg width="24" height="24" viewBox="0 0 24 24"><path fill="#565656" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path><path d="M0 0h24v24H0z" fill="none"></path></svg></span></h3><ul class="hide"><li class="navListItem"><a class="navItem" href="/doodle_labeller/docs/install">Installation</a></li><li class="navListItem"><a class="navItem" href="/doodle_labeller/docs/use">How to Use</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle collapsible">How to Doodle<span class="arrow"><svg width="24" height="24" viewBox="0 0 24 24"><path fill="#565656" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path><path d="M0 0h24v24H0z" fill="none"></path></svg></span></h3><ul class="hide"><li class="navListItem"><a class="navItem" href="/doodle_labeller/docs/howto">How to Doodle</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle collapsible">Gallery<span class="arrow"><svg width="24" height="24" viewBox="0 0 24 24"><path fill="#565656" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path><path d="M0 0h24v24H0z" fill="none"></path></svg></span></h3><ul class="hide"><li class="navListItem"><a class="navItem" href="/doodle_labeller/docs/gallery">Gallery of examples</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle collapsible">User Guide<span class="arrow"><svg width="24" height="24" viewBox="0 0 24 24"><path fill="#565656" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path><path d="M0 0h24v24H0z" fill="none"></path></svg></span></h3><ul class="hide"><li class="navListItem navListItemActive"><a class="navItem" href="/doodle_labeller/docs/api">User guide</a></li><li class="navListItem"><a class="navItem" href="/doodle_labeller/docs/stack">Using a `stacked` raster</a></li><li class="navListItem"><a class="navItem" href="/doodle_labeller/docs/example">Case Study</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1 id="__docusaurus" class="postHeaderTitle">User guide</h1></header><article><div><span><h2><a class="anchor" aria-hidden="true" id="reference"></a><a href="#reference" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Reference</h2>
+<p>The Conditional Random Field (CRF) model used by this tool is described by <a href="https://www.mdpi.com/2076-3263/8/7/244">Buscombe and Ritchie (2018)</a></p>
+<h2><a class="anchor" aria-hidden="true" id="terminology"></a><a href="#terminology" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Terminology</h2>
+<ul>
+<li>image: a 1 or 3-band geotiff, or 1 or 3-band jpg/jpeg/JPG/JPEG, png/PNG, or tiff/tif/TIF/TIFF</li>
+<li>class: a pre-determined category</li>
+<li>label: an annotation made on an image attributed to a class (either manually or automatically - in this program, annotations are manual)</li>
+<li>label image: an image where each pixel has been labeled with a class (either manually or automatically - in this program, the label image is generated automatically using a machine learning algorithm called a CRF)</li>
+<li>binary label image: a label image of 2 classes (the class of interest and everything else)</li>
+</ul>
+<h3><a class="anchor" aria-hidden="true" id="make-a-configjson-file"></a><a href="#make-a-configjson-file" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Make a config.json file</h3>
+<p>Several example config files are provided. A generic multi-label case would be similar to</p>
+<pre><code class="hljs">{
+  &quot;image_folder&quot; : &quot;data/images&quot;,
+  &quot;label_folder&quot;: &quot;data/label_images&quot;,
+  &quot;max_x_steps&quot;: 4,
+  &quot;max_y_steps&quot;: 4,
+  &quot;ref_im_scale&quot;: 0.8,
+  &quot;lw&quot;: 5,
+  &quot;im_order&quot;: &quot;RGB&quot;,
+  &quot;alpha&quot;: 0.5,
+  &quot;create_gtiff&quot;: &quot;false&quot;,
+  &quot;apply_mask&quot;: &quot;None&quot;,
+  &quot;classes&quot;: {
+   &quot;vegetation&quot;: &quot;#0bec0b&quot;,
+   &quot;anthro&quot;: &quot;#f12063&quot;,
+   &quot;road_pavement&quot;: &quot;#7c7878&quot;,
+   &quot;sand&quot;: &quot;#c0d03b&quot;,
+   &quot;mud&quot;: &quot;#62894d&quot;,
+   &quot;marsh&quot;: &quot;#1c6d1d&quot;,
+   &quot;gravel&quot;: &quot;#395c27&quot;,
+   &quot;boulders&quot;: &quot;#94925c&quot;,
+   &quot;snow_ice&quot;: &quot;#f6faf6&quot;,
+   &quot;wrack_peat&quot;: &quot;#23ad96&quot;,
+   &quot;indeterminate&quot;: &quot;#9e289c&quot;
+   }
+}
+</code></pre>
+<p>where the required arguments are:</p>
+<ul>
+<li><code>image_folder</code> : ordinarily this would be &quot;data/images&quot; but could be a relative path to any relative directory</li>
+<li><code>label_folder</code>: see the above but for &quot;data/label_images&quot;</li>
+<li><code>max_x_steps</code>: number of tiles to split the image up in x direction (suggested range: 1- 6, depending on image size/complexity)</li>
+<li><code>max_y_steps</code>: number of tiles to split the image up in y direction (suggested range: 1- 6, depending on image size/complexity)</li>
+<li><code>ref_im_scale</code>: the proportion of the detected screen size to make the window (suggested: 0.5 -- 1.0)</li>
+<li><code>lw</code>: initial pen width in pixels. this can be changed on the fly (suggested range: 5 - 10, depending on image size)</li>
+<li><code>im_order</code>: either &quot;RGB&quot; or &quot;BGR&quot;, depending on what type of imagery you have (RGB is more common)</li>
+<li><code>classes</code>: a dictionary of class names and associated colours as hex codes. There are various online colour pickers including <a href="https://htmlcolorcodes.com/">this one</a></li>
+</ul>
+<p>and the optional arguments and their default values:</p>
+<ul>
+<li><code>apply_mask</code>: either <code>None</code> (if no pre-masking) or a list of label names with which to mask the image. These label images should already exist <em>Default = None</em></li>
+<li><code>create_gtiff</code>: if &quot;true&quot;, the program will create a geotiff label image - only appropriate if the input image is also geotiff. Otherwise, &quot;false&quot; <em>Default = false</em></li>
+<li><code>alpha</code>: the degree of transparency in merged image-output plots <em>Default = 0.5</em></li>
+<li><code>fact</code>: the factor by which to downsample by imagery. <em>Default = 5</em> (this might seem large, but trust me the CRF is very cpu and memory intensive otherwise, and the results work with a large <code>fact</code> turn out ok. Reduce to get finer resolution results by be warned, it will take a lot longer. )</li>
+<li><code>compat_col</code>: compatibility value for the color/space-dependent term in the model, initial value for search. <em>Default = 120</em></li>
+<li><code>theta_col</code>: standard deviation value for the color/space-dependent term in the model, initial value for search. <em>Default = 100</em></li>
+<li><code>optim</code>: if <code>True</code>, will search through more hyperparameters and will take longer. For problem imagery</li>
+</ul>
+<p>This file can be saved anywhere and called anything, but it must have the <code>.json</code> format extension.</p>
+<p>Note that if you get errors reading your config file, it is probably because you have put commas where you shouldn't, or have left commas out</p>
+<h2><a class="anchor" aria-hidden="true" id="run-doodlerpy"></a><a href="#run-doodlerpy" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Run doodler.py</h2>
+<p>Assuming you have already activated the conda environment (<code>conda activate doodler</code> - see above) ...</p>
+<p>you will need to cd to the directory you will be working in, for example:</p>
+<pre><code class="hljs"><span class="hljs-keyword">cd</span> <span class="hljs-string">/Documents/doodle_labeller</span>
+</code></pre>
+<p>Then run it with:</p>
+<pre><code class="hljs"><span class="hljs-selector-tag">python</span> <span class="hljs-selector-tag">doodler</span><span class="hljs-selector-class">.py</span> <span class="hljs-selector-tag">-c</span> <span class="hljs-selector-tag">config_file</span><span class="hljs-selector-class">.json</span>
+</code></pre>
+<p>or optionally</p>
+<pre><code class="hljs">python doodler.py -c <span class="hljs-type">path</span>/<span class="hljs-keyword">to</span>/config_file.json -f <span class="hljs-type">path</span>/<span class="hljs-keyword">to</span>/npy_file
+</code></pre>
+<p>Command line arguments:</p>
+<ul>
+<li><code>-h</code>: print a help message to screen, then exit</li>
+<li><code>-c</code>: for specification of a <code>config</code> file. Required.</li>
+<li><code>-f</code>: pass a <code>.npy</code> file to the program (made using <code>doodler.py</code> during a previous session). Optional</li>
+</ul>
+<h3><a class="anchor" aria-hidden="true" id="draw-on-the-image"></a><a href="#draw-on-the-image" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Draw on the image</h3>
+<p>The title of the window is the label that will be associated with the pixels
+you draw on, by holding down the left mouse button.</p>
+<ul>
+<li>After you are done with label (or if you need to skip a class because it is not present in the current tile) press <code>escape</code> (<code>Esc</code> key, usually the top left corner on your keyboard).</li>
+<li>You can increase and decrease the brush width with (number) <code>1 / 2</code> keys.</li>
+<li>You can also undo a mistake with the <code>z</code> key.</li>
+<li>Use <code>s</code> to skip forward a square (note that this will not record any labels done on the current square - this feature is for squares with no labels to make)</li>
+<li>Use <code>b</code> to go back a square</li>
+</ul>
+<p>If your mouse has a scroll wheel, you can use that to zoom in and out. Other navigation options (zoom, pan, etc) are available with a right mouse click.</p>
+<h3><a class="anchor" aria-hidden="true" id="dense-labeling-happens-after-a-manual-annotation-session"></a><a href="#dense-labeling-happens-after-a-manual-annotation-session" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Dense labeling happens after a manual annotation session</h3>
+<p>After you have labeled each image tile for each image, the program will automatically use the CRF algorithm to carry out dense (i.e. per-pixel) labelling based on the labels you provided and the underlying image</p>
+<h2><a class="anchor" aria-hidden="true" id="optionally-run-mergepy"></a><a href="#optionally-run-mergepy" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>[Optionally] Run merge.py</h2>
+<p>This script takes each individual mask image and merges them into one, keeping track of classes and class colours.</p>
+<p>Assuming you have already activated the conda environment (<code>conda activate doodler</code> - see above) ...</p>
+<p>you will need to cd to the directory you will be working in, for example:</p>
+<pre><code class="hljs"><span class="hljs-keyword">cd</span> <span class="hljs-string">/Documents/doodle_labeller</span>
+</code></pre>
+<p>Then run it with:</p>
+<pre><code class="hljs"><span class="hljs-selector-tag">python</span> <span class="hljs-selector-tag">merge</span><span class="hljs-selector-class">.py</span> <span class="hljs-selector-tag">-c</span> <span class="hljs-selector-tag">config_merge</span><span class="hljs-selector-class">.json</span>
+</code></pre>
+<p>An example config file is provided:</p>
+<pre><code class="hljs">{
+  &quot;image_folder&quot; : &quot;data/images&quot;,
+  &quot;label_folder&quot;: &quot;data/label_images&quot;,
+  &quot;im_order&quot;: &quot;RGB&quot;,
+  &quot;alpha&quot;: 0.5,
+  &quot;create_gtiff&quot;: &quot;true&quot;,
+  &quot;name&quot;: &quot;2018_12_ldi_15cm_utm_0_0&quot;,
+
+  &quot;to_merge&quot;: [&quot;deep&quot;,&quot;anthro&quot;],
+
+  &quot;classesA&quot;: {
+    &quot;deep&quot;: &quot;#2f36aa&quot;,
+    &quot;whitewater&quot;: &quot;#E317CE&quot;,
+    &quot;shallow&quot;: &quot;#b3946b&quot;,
+    &quot;no_water&quot;: &quot;#e35259&quot;
+  },
+
+  &quot;classesB&quot;: {
+    &quot;anthro&quot;: &quot;#aa352f&quot;,
+    &quot;vegetation&quot;: &quot;#2faa58&quot;,
+    &quot;mud&quot;: &quot;#aa8b2f&quot;,
+    &quot;sand&quot;: &quot;#a0aa2f&quot;,
+    &quot;submerged_sediment&quot;: &quot;#84aa2f&quot;,
+    &quot;gravel&quot;: &quot;#186074&quot;,
+    &quot;boulder&quot;: &quot;#4f7373&quot;,
+    &quot;wrack_peat&quot;: &quot;#aa2f9c&quot;,
+    &quot;snow_ice&quot;: &quot;#aa2f69&quot;,
+    &quot;shell&quot;: &quot;#84b1b4&quot;
+   }
+}
+</code></pre>
+<p>The required arguments are:</p>
+<ul>
+<li><code>to_merge</code>: a list of label image sets (generated by <code>doodler.py</code>) to merge</li>
+<li><code>classes1</code>, <code>classes2</code>, etc: these are the class names and hex colour codes associated with each label sets in <code>to_merge</code>, in order.  There are various online colour pickers including <a href="https://htmlcolorcodes.com/">this one</a></li>
+<li><code>im_order</code>: either &quot;RGB&quot; or &quot;BGR&quot;, depending on what type of imagery you have (RGB is more common)</li>
+<li><code>image_folder</code> : ordinarily this would be &quot;data/images&quot; but could be a relative path to any relative directory</li>
+<li><code>label_folder</code>: see the above but for &quot;data/label_images&quot;</li>
+<li><code>ref_im_scale</code>: scalar to control the size of the image and label windows <em>Default = 0.8</em></li>
+</ul>
+<p>and the optional arguments and their default values:</p>
+<ul>
+<li><code>create_gtiff</code>: if &quot;true&quot;, the program will create a geotiff label image - only appropriate if the input image is also geotiff. Otherwise, &quot;false&quot; <em>Default = false</em></li>
+<li><code>alpha</code>: the degree of transparency in merged image-output plots <em>Default = 0.5</em></li>
+<li><code>fact</code>: the factor by which to downsample by imagery. <em>Default = 5</em> (this might seem large, but trust me the CRF is very cpu and memory intensive otherwise, and the results work with a large <code>fact</code> turn out ok. Reduce to get finer resolution results by be warned, it will take a lot longer. )</li>
+<li><code>compat_col</code>: compatibility value for the color/space-dependent term in the model, initial value for search. <em>Default = 20</em></li>
+<li><code>theta_col</code>: standard deviation value for the color/space-dependent term in the model, initial value for search. <em>Default = 20</em></li>
+<li><code>medfilt</code>: whether or not to apply a median filter to smooth the results <em>Default = &quot;true&quot;</em></li>
+</ul>
+<h2><a class="anchor" aria-hidden="true" id="got-file-spaces-in-your-file-names"></a><a href="#got-file-spaces-in-your-file-names" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Got file spaces in your file names?</h2>
+<p>That's a problem for doodler. On unix based file systems:</p>
+<p><code>find -name &quot;* *&quot; -type f | rename 's/ /_/g'</code></p>
+<h2><a class="anchor" aria-hidden="true" id="got-a-bad-result"></a><a href="#got-a-bad-result" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Got a bad result?</h2>
+<p>Did you get a disappointing result from <code>doodler.py</code>?</p>
+<p>You could try using <code>optim = True</code> in the config file, to help with problematic imagery. It performs a much wider hyperparameter search</p>
+<p>You can redo the annotations:</p>
+<pre><code class="hljs"><span class="hljs-selector-tag">python</span> <span class="hljs-selector-tag">doodler</span><span class="hljs-selector-class">.py</span> <span class="hljs-selector-tag">-c</span> <span class="hljs-selector-tag">config_file</span><span class="hljs-selector-class">.json</span>
+</code></pre>
+<p>or optionally you can pass your previous annotations instead of having to redo annotations</p>
+<pre><code class="hljs">python doodler.py -c <span class="hljs-type">path</span>/<span class="hljs-keyword">to</span>/config_file.json -f <span class="hljs-type">path</span>/<span class="hljs-keyword">to</span>/npy_file
+</code></pre>
+<p>Command line arguments:</p>
+<ul>
+<li><code>-h</code>: print a help message to screen, then exit</li>
+<li><code>-c</code>: for specification of a <code>config</code> file. Optional - program will prompt you for it if it is missing from command line arguments</li>
+<li><code>-f</code>: pass a <code>.npy</code> file to the program (made using <code>doodler.py</code> during a previous session). Optional</li>
+</ul>
+<h2><a class="anchor" aria-hidden="true" id="crf-implementation-details"></a><a href="#crf-implementation-details" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>CRF implementation details</h2>
+<ol>
+<li>if <code>optim</code> is <code>True</code>, the probability of your annotation is set to 0.8, and a set of 10 factors are defined that modify <code>theta_col</code> and <code>compat_col</code>. If <code>optim</code> is <code>False</code>, the probability of your annotation is set to 0.9, and a set of 5 factors are defined that modify <code>theta_col</code> and <code>compat_col</code>.</li>
+<li>per-class weights are computed as inverse relative frequencies. The number of each pixel in each annotation class is computed and normalized. If the maximum relative frequency is more than 5 times the minimum, the maximum is halved and the relative frequencies re-normalized before their inverses are used as weights in the CRF model.</li>
+<li>the CRF <code>scale</code> parameter is determined as 1+(5 * (<code>M</code> / 3681)) where <code>M</code> is the maximum image dimension</li>
+<li>the hyperparameters <code>theta_col</code> and <code>compat_col</code> are modified by the factors described above. The 5 factors are .5, .75, 1, 1.25, and 1.5, therefore if <code>theta_col</code> is 100, the program would cycle through creating a CRF realization based on  <code>theta_col</code> = 50, <code>compat_col</code> = 50, then 75, 100, and 140. The 10 <code>optim</code> factors are .5, .66, .75, 1, 1.25, 1.33, and 2.</li>
+<li>The predictions (softmax scores based on normalized logits) per class are computed as the weighted average of the per-class predictions compiled over the number of hyperparameter factors.</li>
+<li>Each per-class prediction raster is then median-filtered using a disk-shaped structural element with a radius of 10*(M/(3681)) pixels</li>
+<li>To make the final classification, if the per-class prediction is &gt; .5 (for binary) or &gt; 2*(1/<code>N</code>) where <code>N</code>=number of classes (for multiclass), the pixel is encoded that label. This works in order of classes listed in the config file, so a latter class could override a former one. Where no grid cell is encoded with a label, such as where the above criteria are not met, the label is the argument maximum for for that cell in the stack.</li>
+</ol>
+<h2><a class="anchor" aria-hidden="true" id="improvements-coming-soon"></a><a href="#improvements-coming-soon" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Improvements coming soon</h2>
+<ul>
+<li>fix the line width issue on the current image tile</li>
+<li>compiled executables or web version</li>
+<li>lookup table for consistent hex colours for common classes, or assign colors based on name?</li>
+<li>move labelling window to different screen option?</li>
+</ul>
+<h3><a class="anchor" aria-hidden="true" id="known-issues"></a><a href="#known-issues" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Known issues</h3>
+<p>This software is undergoing development and is subject to frequent change. In particular, 1d and 4d imagery has not been extensively tested so please expect bugs. Proper documentation is forthcoming.</p>
+<p>I know the brush thickness buttons doesn't change on the present tile - I am working on a fix</p>
+<h2><a class="anchor" aria-hidden="true" id="faqs"></a><a href="#faqs" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>FAQS</h2>
+<ul>
+<li><em>Why are my results poor?</em></li>
+</ul>
+<blockquote>
+<p>Some things to check: 1) the default 'fact' is set quite high to deal with really large imagery and/or small computer RAM (&lt;&lt; 16 GB) and/or large imagery (&gt;8,000 pixels in any dimension). If your system can handle it (it probably can), set the number low in the config file e.g. <code>'fact': 2,</code> for a downsize factor of 2, and <code>'fact': 1,</code> for no downsizing. 2) did you run <code>doodler.py</code> using <code>optim=True</code>? 3) Increase one or both of the CRF parameters in the config file, e.g. change from the default <code>'compat_col': 120,</code> and/or <code>'theta_col': 120,</code> to something like <code>'compat_col': 140,</code> and/or <code>'theta_col': 140,</code></p>
+</blockquote>
+<ul>
+<li><em>Why is my window so small?</em></li>
+</ul>
+<blockquote>
+<p>Try using a large number for <code>ref_im_scale</code> in the config file, increasing it from the default value of 0.8 to, say, 1.0 or even 1.2</p>
+</blockquote>
+<ul>
+<li><em>What to I do with a <code>json.decoder.JSONDecodeError</code>?</em></li>
+</ul>
+<blockquote>
+<p>This relates to the config file. You either have a comma at the end of a list (bounded by <code>{...}</code>) where it shouldn't be, or you have a variable outside of <code>&quot;...&quot;</code></p>
+</blockquote>
+<p>To ask a different question, please use the <code>Issues</code> tab (see above) - please do not email me</p>
+<h2><a class="anchor" aria-hidden="true" id="contributing"></a><a href="#contributing" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Contributing</h2>
+<p>If you'd like to discuss a new feature, use the <code>Issues</code> tab. If you'd like to submit code improvements, please submit a <code>pull request</code></p>
+<h2><a class="anchor" aria-hidden="true" id="version-history"></a><a href="#version-history" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Version history</h2>
+<h3><a class="anchor" aria-hidden="true" id="7312020"></a><a href="#7312020" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>7/31/2020</h3>
+<ol>
+<li>number of bands is now detected automatically and no longer needs to be specified in the config file. Involved implementing an elaborate function to determine whether or not the 4th band in an image is an alpha mask</li>
+<li>started website at <a href="https://dbuscombe-usgs.github.io/doodle_labeller/">https://dbuscombe-usgs.github.io/doodle_labeller/</a></li>
+<li>remove the <code>utils</code> script and folder (creating a 4 band image) and replaced it with a blog post on the new website</li>
+</ol>
+<h3><a class="anchor" aria-hidden="true" id="72920"></a><a href="#72920" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>7/29/20</h3>
+<ol>
+<li>removed <code>doodler_optim.py</code> (optim can now be specified as a config file parameter, <code>optim=True</code>)</li>
+<li>good general parameters now hard-coded: <code>compat_col</code> = 120, <code>theta_col</code> = 100</li>
+<li>fixed plotting errors so 1-class labels show in mres file, and zeros in final label image dealt with so they don't skew color scale</li>
+<li>smaller <code>search</code> range</li>
+<li>simplified <code>merge.py</code> and made it more consistent with <code>doodler.py</code>, using same function calls. Now it doesn't do an additional CRF inference step, just the merging of existing labels</li>
+<li>tidied example images and labels</li>
+<li>changed algo that converts probabilities per class to final label image. A class is assigned if its probability is 2(1/N) where N is the number of classes, or 1/N if N=2</li>
+<li>if <code>-c</code> flag is missing, it prompts you to pick a config file manually/graphically</li>
+<li>no longer makes a <code>_probs_per_class.npy</code> file (not necessary going forward)</li>
+</ol>
+<h3><a class="anchor" aria-hidden="true" id="72420"></a><a href="#72420" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>7/24/20</h3>
+<ol>
+<li>the per class predictions are now median-filtered before used in MAP estimation</li>
+<li>defaults should be <code>theta_col</code> = <code>compat_col</code> = 120 (?)</li>
+<li>updated README with explanation about the implementation of the CRF (see <code>CRF implementation details</code>    above)</li>
+<li>probabilities per class now float16 to save disk space</li>
+<li>the mres file now shows your annotations as well as the label image, side by side. Numerous uses...</li>
+<li>got rid of some annoying warning message so the screen printout is easier to read</li>
+</ol>
+<h3><a class="anchor" aria-hidden="true" id="7520"></a><a href="#7520" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>7/5/20</h3>
+<ol>
+<li>moved all common functions to <code>funcs.py</code>, and consolidated several functions</li>
+<li>implemented a better and quicker way to final label( now is the weighted average of each class). Works much better in general and particularly for small isolated regions. The weights are the relative frequencies of the classes in the annotations</li>
+<li>fixed the probabilities per class bugs (many)</li>
+<li>disabled garbage collector to help troubleshoot program slow-down over successive classes</li>
+<li>smaller probability per class npy file</li>
+<li>now automatically removes the <code>npz</code> files at the end</li>
+</ol>
+<h3><a class="anchor" aria-hidden="true" id="7520-1"></a><a href="#7520-1" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>7/5/20</h3>
+<ol>
+<li>Implemented a better way to estimate the final label from the stack or probabilities associated with each class</li>
+</ol>
+<h3><a class="anchor" aria-hidden="true" id="7120"></a><a href="#7120" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>7/1/20</h3>
+<ol>
+<li>The probability of the label is now computed and outputted in the same formats as the label images. This probability will be useful for purposes such as further label refinement, error propagation, etc</li>
+<li>Bug fixes, and more tests into default CRF hyperparameters</li>
+</ol>
+<h3><a class="anchor" aria-hidden="true" id="62420"></a><a href="#62420" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>6/24/20</h3>
+<ol>
+<li>now you can pass annotation files (<code>.npy</code>) to <code>doodler.py</code> if you want to 'redo' the CRF inference.</li>
+<li>progress bar (!) in all scripts</li>
+<li>more memory/efficiency improvements</li>
+</ol>
+<h3><a class="anchor" aria-hidden="true" id="62020"></a><a href="#62020" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>6/20/20</h3>
+<ol>
+<li>CRF inference is now faster and hopefully more robust</li>
+<li>better use of memory</li>
+<li>smaller output file sizes</li>
+<li>masking is now specified by type/name rather than filename, allowing for merging of multiple sets of image labels that conform to a common pattern</li>
+<li>config files are now easier to construct because no hard-coding of file paths, and no CRF parameter specification by default (although you can still specify the parameters)</li>
+<li>labeling still happens in chunks, but inference uses merged chunks for smaller imagery (&lt;10000 px in all dimensions)</li>
+<li><code>doodler.py</code> now automatically computes the optimal CRF hyperparameters for each image chunk. I have done a lot of research into the sensitivity of results to input hyperparameters. The variation can be massive; therefore I have hard-coded some values in, implemented formulas for others, and allow the program to attempt to search for the remaining hyperparameters values. Seems to work ok in tests but please report - work still in progress</li>
+<li>new <code>doodler_optim.py</code> is for redoing imagery, this time with an expanded hyperparameter search. Use in an emergency (requires redoing sparse labels for the offending image/class set) - work still in progress (subject to change)</li>
+<li>the optimization of the hyperparameters happens on subsampled imagery (unless any image chunk dimension is less than 2000 pixels), which is faster and less memory intensive and still results in sensible outputs</li>
+<li>periods (other than to specify the file extension) are now allowed in input image file names</li>
+<li><code>merge.py</code> will only use chunks if any image dimension is less than 10000 pixels</li>
+<li><code>merge.py</code> now makes a semi-transparent overlay figure (like <code>doodler.py</code> does)</li>
+</ol>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/doodle_labeller/docs/gallery"><span class="arrow-prev">← </span><span>Gallery of examples</span></a><a class="docs-next button" href="/doodle_labeller/docs/stack"><span>Using a `stacked` raster</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#reference">Reference</a></li><li><a href="#terminology">Terminology</a><ul class="toc-headings"><li><a href="#make-a-configjson-file">Make a config.json file</a></li></ul></li><li><a href="#run-doodlerpy">Run doodler.py</a><ul class="toc-headings"><li><a href="#draw-on-the-image">Draw on the image</a></li><li><a href="#dense-labeling-happens-after-a-manual-annotation-session">Dense labeling happens after a manual annotation session</a></li></ul></li><li><a href="#optionally-run-mergepy">[Optionally] Run merge.py</a></li><li><a href="#got-file-spaces-in-your-file-names">Got file spaces in your file names?</a></li><li><a href="#got-a-bad-result">Got a bad result?</a></li><li><a href="#crf-implementation-details">CRF implementation details</a></li><li><a href="#improvements-coming-soon">Improvements coming soon</a><ul class="toc-headings"><li><a href="#known-issues">Known issues</a></li></ul></li><li><a href="#faqs">FAQS</a></li><li><a href="#contributing">Contributing</a></li><li><a href="#version-history">Version history</a><ul class="toc-headings"><li><a href="#7312020">7/31/2020</a></li><li><a href="#72920">7/29/20</a></li><li><a href="#72420">7/24/20</a></li><li><a href="#7520">7/5/20</a></li><li><a href="#7520-1">7/5/20</a></li><li><a href="#7120">7/1/20</a></li><li><a href="#62420">6/24/20</a></li><li><a href="#62020">6/20/20</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/doodle_labeller/" class="nav-home"><img src="/doodle_labeller/img/favicon.ico" alt="Doodle Labeller (Doodler)" width="66" height="58"/></a><div><h5>Docs</h5><a href="/doodle_labeller/docs/en/install.html">Getting Started</a><a href="/doodle_labeller/docs/en/howto.html">How to Doodle</a><a href="/doodle_labeller/docs/en/api.html">Full user guide</a></div><div><h5>Community</h5><a href="https://stackoverflow.com/questions/tagged/" target="_blank" rel="noreferrer noopener">Stack Overflow</a><a href="https://twitter.com/magic_walnut" target="_blank" rel="noreferrer noopener">Twitter</a></div><div><h5>More</h5><a href="/doodle_labeller/blog">Blog</a><a href="https://github.com/dbuscombe-usgs/doodle_labeller">GitHub</a><a class="github-button" data-icon="octicon-star" data-count-href="/dbuscombe-usgs/docusaurus/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a><div class="social"><a href="https://twitter.com/magic_walnut" class="twitter-follow-button">Follow @magic_walnut</a></div></div></section><a href="https://mardascience.com/" target="_blank" rel="noreferrer noopener" class="fbOpenSource"><img src="/doodle_labeller/img/dash-logo-new.png" alt="Marda Science" width="170" height="45"/></a><section class="copyright">Copyright © 2020 Marda Science, LLC</section></footer></div><script>window.twttr=(function(d,s, id){var js,fjs=d.getElementsByTagName(s)[0],t=window.twttr||{};if(d.getElementById(id))return t;js=d.createElement(s);js.id=id;js.src='https://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js, fjs);t._e = [];t.ready = function(f) {t._e.push(f);};return t;}(document, 'script', 'twitter-wjs'));</script></body></html>

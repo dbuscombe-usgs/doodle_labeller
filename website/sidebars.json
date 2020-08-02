@@ -1,0 +1,8 @@
+{
+  "docs": {
+    "Getting Started": ["install", "use"],
+    "How to Doodle": ["howto"],
+    "Gallery": ["gallery"],
+    "User Guide": ["api", "stack", "example"]
+  }
+}

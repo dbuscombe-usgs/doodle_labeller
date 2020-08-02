@@ -3,9 +3,8 @@
   "label_folder": "data/label_images",
   "im_order": "RGB",
   "alpha": 0.5,
-  "num_bands": 3,
   "create_gtiff": "true",
-  "name": "2018_12_ldi_15cm_utm_0_0",
+  "name": "2017-02-14_5cm_5000_0",
 
   "to_merge": ["deep","anthro"],
 

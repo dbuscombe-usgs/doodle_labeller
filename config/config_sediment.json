@@ -8,8 +8,6 @@
   "im_order": "RGB",
   "alpha": 0.5,
   "create_gtiff": "false",
-  "num_bands": 3,
-  "apply_mask": ["deep"],
   "medfilt": "false",
   "fact": 3,
   "classes": {
