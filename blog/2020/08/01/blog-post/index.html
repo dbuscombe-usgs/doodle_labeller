@@ -1,0 +1,102 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Splitting up large geoTIFF orthomosaics · Doodle Labeller (Doodler)</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="`Doodler` can work with really large images, but it is usually best to keep your images &lt; 10,000 pixels in any dimension, because then the program will do CRF inference on the whole image at once rather than in chunks. This usually results in better image segmentations that are more consistent with your doodles."/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Splitting up large geoTIFF orthomosaics · Doodle Labeller (Doodler)"/><meta property="og:type" content="website"/><meta property="og:url" content="https://dbuscombe-usgs.github.io/doodle_labeller/blog/2020/08/01/blog-post"/><meta property="og:description" content="`Doodler` can work with really large images, but it is usually best to keep your images &lt; 10,000 pixels in any dimension, because then the program will do CRF inference on the whole image at once rather than in chunks. This usually results in better image segmentations that are more consistent with your doodles."/><meta property="og:image" content="https://dbuscombe-usgs.github.io/doodle_labeller/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://dbuscombe-usgs.github.io/doodle_labeller/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/doodle_labeller/img/favicon.ico"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><link rel="alternate" type="application/atom+xml" href="https://dbuscombe-usgs.github.io/doodle_labeller/blog/atom.xml" title="Doodle Labeller (Doodler) Blog ATOM Feed"/><link rel="alternate" type="application/rss+xml" href="https://dbuscombe-usgs.github.io/doodle_labeller/blog/feed.xml" title="Doodle Labeller (Doodler) Blog RSS Feed"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/doodle_labeller/js/scrollSpy.js"></script><link rel="stylesheet" href="/doodle_labeller/css/main.css"/><script src="/doodle_labeller/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/doodle_labeller/"><img class="logo" src="/doodle_labeller/img/favicon.ico" alt="Doodle Labeller (Doodler)"/><h2 class="headerTitleWithLogo">Doodle Labeller (Doodler)</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class=""><a href="/doodle_labeller/docs/install" target="_self">Get Started</a></li><li class=""><a href="/doodle_labeller/docs/api" target="_self">Guide</a></li><li class="siteNavGroupActive"><a href="/doodle_labeller/blog/" target="_self">Blog</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Recent Posts</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Recent Posts</h3><ul class=""><li class="navListItem navListItemActive"><a class="navItem" href="/doodle_labeller/blog/2020/08/01/blog-post">Splitting up large geoTIFF orthomosaics</a></li><li class="navListItem"><a class="navItem" href="/doodle_labeller/blog/2020/07/31/blog-post">merge a 3-band and 1-band image</a></li><li class="navListItem"><a class="navItem" href="/doodle_labeller/blog/2020/07/30/blog-post">no spaces in filenames!</a></li><li class="navListItem"><a class="navItem" href="/doodle_labeller/blog/2020/07/29/blog-post">batch &quot;redoing&quot;</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer postContainer blogContainer"><div class="wrapper"><div class="lonePost"><div class="post"><header class="postHeader"><h1 class="postHeaderTitle"><a href="/doodle_labeller/blog/2020/08/01/blog-post">Splitting up large geoTIFF orthomosaics</a></h1><p class="post-meta">August 1, 2020</p><div class="authorBlock"><p class="post-authorName"><a href="http://twitter.com/magic_walnut" target="_blank" rel="noreferrer noopener">Dan Buscombe</a></p></div></header><div><span><p><code>Doodler</code> can work with really large images, but it is usually best to keep your images &lt; 10,000 pixels in any dimension, because then the program will do CRF inference on the whole image at once rather than in chunks. This usually results in better image segmentations that are more consistent with your doodles.</p>
+<p>So, this post is all about how you make smaller image tiles from a very large geoTIFF format orthomosaic, using python. The smaller tiles will also be written out as image tiles, with their relative position in the larger image described in the file name, for easy reassembly</p>
+<p>We'll need a dependency not included in the <code>doodler</code> environment: <code>gdal</code></p>
+<p><code>conda install gdal</code></p>
+<p>Now, in python:</p>
+<pre><code class="hljs"><span class="hljs-keyword">import</span> os, gdal
+<span class="hljs-title">from</span> gdalconst <span class="hljs-keyword">import</span> *
+<span class="hljs-title">from</span> glob <span class="hljs-keyword">import</span> glob
+</code></pre>
+<p>How large do you want your output (square) image tiles to be? (in pixels)</p>
+<pre><code class="hljs"><span class="hljs-attr">tilesize</span> = <span class="hljs-number">5000</span>
+</code></pre>
+<p>What images would you like to chop up?</p>
+<pre><code class="hljs">bigfiles = [
+'Sandwich/<span class="hljs-number">2017</span><span class="hljs-number">-01</span><span class="hljs-number">-09</span>_Sandwich_5cm_ortho.tif',
+'Sandwich/<span class="hljs-number">2017</span><span class="hljs-number">-02</span><span class="hljs-number">-14</span>_Sandwich_5cm_ortho.tif',
+'Sandwich/<span class="hljs-number">2017</span><span class="hljs-number">-03</span><span class="hljs-number">-16</span>_Sandwich_5cm_ortho.tif',
+'Sandwich/<span class="hljs-number">2018</span><span class="hljs-number">-01</span><span class="hljs-number">-10</span>_Sandwich_5cm_ortho.tif',
+]
+</code></pre>
+<p>List the widths and heights of those input <code>bigfiles</code></p>
+<pre><code class="hljs">widths = [<span class="hljs-number">13314</span>, <span class="hljs-number">13314</span>, <span class="hljs-number">13314</span>, <span class="hljs-number">19972</span>]
+heights = [<span class="hljs-number">6212</span>, <span class="hljs-number">6212</span>, <span class="hljs-number">6212</span>, <span class="hljs-number">9319</span>]
+</code></pre>
+<p>Specify a new folder for each set of image tiles (one per big image)</p>
+<pre><code class="hljs">folders = ['Sandwich/<span class="hljs-number">2017</span><span class="hljs-number">-01</span><span class="hljs-number">-09</span>_5cm', 'Sandwich/<span class="hljs-number">2017</span><span class="hljs-number">-02</span><span class="hljs-number">-14</span>_5cm',\
+          'Sandwich/<span class="hljs-number">2017</span><span class="hljs-number">-03</span><span class="hljs-number">-16</span>_5cm','Sandwich/<span class="hljs-number">2017</span><span class="hljs-number">-01</span><span class="hljs-number">-10</span>_5cm']
+</code></pre>
+<p>Make file name prefixes by borrowing the folder name:</p>
+<pre><code class="hljs"><span class="hljs-attr">prefixes</span> = [f.split(<span class="hljs-string">'/'</span>)[-<span class="hljs-number">1</span>] for f in folders]
+</code></pre>
+<p>Finally, loop through each file, chop it into chunks using <code>gdal_translate</code>, called by an <code>os.system()</code> command. Then moves the tiles into their respective folders</p>
+<pre><code class="hljs"><span class="hljs-keyword">for</span> b,f,p in zip(bigfiles, folders, prefixes):
+
+    <span class="hljs-meta"># chop the image into chunks</span>
+    <span class="hljs-keyword">for</span> i in range(<span class="hljs-number">0</span>, widths[k], tilesize):
+        <span class="hljs-keyword">for</span> j in range(<span class="hljs-number">0</span>, heights[k], tilesize):
+            gdaltranString = <span class="hljs-string">"gdal_translate -of GTIFF -srcwin "</span>+<span class="hljs-keyword">str</span>(i)+<span class="hljs-string">", "</span>+<span class="hljs-keyword">str</span>(j)+<span class="hljs-string">", "</span>+<span class="hljs-keyword">str</span>(tilesize)+<span class="hljs-string">", "</span> \
+                +<span class="hljs-keyword">str</span>(tilesize)+<span class="hljs-string">" "</span>+b+<span class="hljs-string">" "</span>+p+<span class="hljs-string">"_"</span>+<span class="hljs-keyword">str</span>(i)+<span class="hljs-string">"_"</span>+<span class="hljs-keyword">str</span>(j)+<span class="hljs-string">".tif"</span>
+            os.system(gdaltranString)
+
+    <span class="hljs-meta">##move those chunks to a directory</span>
+    os.mkdir(f)
+    os.system(<span class="hljs-string">'mv '</span>+p+<span class="hljs-string">'*.tif '</span>+f)
+</code></pre>
+</span></div></div><div class="blogSocialSection"></div></div><div class="blog-recent"><a class="button" href="/doodle_labeller/blog/">Recent Posts</a></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/doodle_labeller/" class="nav-home"><img src="/doodle_labeller/img/favicon.ico" alt="Doodle Labeller (Doodler)" width="66" height="58"/></a><div><h5>Docs</h5><a href="/doodle_labeller/docs/en/install.html">Getting Started</a><a href="/doodle_labeller/docs/en/howto.html">How to Doodle</a><a href="/doodle_labeller/docs/en/api.html">Full user guide</a></div><div><h5>Community</h5><a href="https://stackoverflow.com/questions/tagged/" target="_blank" rel="noreferrer noopener">Stack Overflow</a><a href="https://twitter.com/magic_walnut" target="_blank" rel="noreferrer noopener">Twitter</a></div><div><h5>More</h5><a href="/doodle_labeller/blog">Blog</a><a href="https://github.com/dbuscombe-usgs/doodle_labeller">GitHub</a><a class="github-button" data-icon="octicon-star" data-count-href="/dbuscombe-usgs/docusaurus/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a><div class="social"><a href="https://twitter.com/magic_walnut" class="twitter-follow-button">Follow @magic_walnut</a></div></div></section><a href="https://mardascience.com/" target="_blank" rel="noreferrer noopener" class="fbOpenSource"><img src="/doodle_labeller/img/dash-logo-new.png" alt="Marda Science" width="170" height="45"/></a><section class="copyright">Copyright © 2020 Marda Science, LLC</section></footer></div><script>window.twttr=(function(d,s, id){var js,fjs=d.getElementsByTagName(s)[0],t=window.twttr||{};if(d.getElementById(id))return t;js=d.createElement(s);js.id=id;js.src='https://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js, fjs);t._e = [];t.ready = function(f) {t._e.push(f);};return t;}(document, 'script', 'twitter-wjs'));</script></body></html>

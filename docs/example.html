@@ -1,0 +1,190 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Case Study · Doodle Labeller (Doodler)</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="This goes through a full workflow from scratch on a particular set of images, starting with the config file, the doodling, optimizing, and finally merging"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Case Study · Doodle Labeller (Doodler)"/><meta property="og:type" content="website"/><meta property="og:url" content="https://dbuscombe-usgs.github.io/doodle_labeller/"/><meta property="og:description" content="This goes through a full workflow from scratch on a particular set of images, starting with the config file, the doodling, optimizing, and finally merging"/><meta property="og:image" content="https://dbuscombe-usgs.github.io/doodle_labeller/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://dbuscombe-usgs.github.io/doodle_labeller/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/doodle_labeller/img/favicon.ico"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><link rel="alternate" type="application/atom+xml" href="https://dbuscombe-usgs.github.io/doodle_labeller/blog/atom.xml" title="Doodle Labeller (Doodler) Blog ATOM Feed"/><link rel="alternate" type="application/rss+xml" href="https://dbuscombe-usgs.github.io/doodle_labeller/blog/feed.xml" title="Doodle Labeller (Doodler) Blog RSS Feed"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/doodle_labeller/js/scrollSpy.js"></script><link rel="stylesheet" href="/doodle_labeller/css/main.css"/><script src="/doodle_labeller/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/doodle_labeller/"><img class="logo" src="/doodle_labeller/img/favicon.ico" alt="Doodle Labeller (Doodler)"/><h2 class="headerTitleWithLogo">Doodle Labeller (Doodler)</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/doodle_labeller/docs/install" target="_self">Get Started</a></li><li class="siteNavGroupActive"><a href="/doodle_labeller/docs/api" target="_self">Guide</a></li><li class=""><a href="/doodle_labeller/blog/" target="_self">Blog</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>User Guide</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle collapsible">Getting Started<span class="arrow"><svg width="24" height="24" viewBox="0 0 24 24"><path fill="#565656" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path><path d="M0 0h24v24H0z" fill="none"></path></svg></span></h3><ul class="hide"><li class="navListItem"><a class="navItem" href="/doodle_labeller/docs/install">Installation</a></li><li class="navListItem"><a class="navItem" href="/doodle_labeller/docs/use">How to Use</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle collapsible">How to Doodle<span class="arrow"><svg width="24" height="24" viewBox="0 0 24 24"><path fill="#565656" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path><path d="M0 0h24v24H0z" fill="none"></path></svg></span></h3><ul class="hide"><li class="navListItem"><a class="navItem" href="/doodle_labeller/docs/howto">How to Doodle</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle collapsible">Gallery<span class="arrow"><svg width="24" height="24" viewBox="0 0 24 24"><path fill="#565656" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path><path d="M0 0h24v24H0z" fill="none"></path></svg></span></h3><ul class="hide"><li class="navListItem"><a class="navItem" href="/doodle_labeller/docs/gallery">Gallery of examples</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle collapsible">User Guide<span class="arrow"><svg width="24" height="24" viewBox="0 0 24 24"><path fill="#565656" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path><path d="M0 0h24v24H0z" fill="none"></path></svg></span></h3><ul class="hide"><li class="navListItem"><a class="navItem" href="/doodle_labeller/docs/api">User guide</a></li><li class="navListItem"><a class="navItem" href="/doodle_labeller/docs/stack">Using a `stacked` raster</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/doodle_labeller/docs/example">Case Study</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1 id="__docusaurus" class="postHeaderTitle">Case Study</h1></header><article><div><span><p>This goes through a full workflow from scratch on a particular set of images, starting with the config file, the doodling, optimizing, and finally merging</p>
+<h3><a class="anchor" aria-hidden="true" id="the-data-and-classes"></a><a href="#the-data-and-classes" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>The data and classes</h3>
+<p>We're going to use the Sandwich imagery we made in a blog post. Data come from Chris Sherwood, USGS Woods Hole. Put the images you want to label in one session inside the <code>data/images</code> folder.</p>
+<p><img src="/doodle_labeller/docs/assets/casestudy1.png" alt=""></p>
+<p>We have 5 images, and will label each of these images twice (in two separate <code>doodler</code> sessions)</p>
+<h3><a class="anchor" aria-hidden="true" id="config-file-creation"></a><a href="#config-file-creation" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><code>config</code> file creation</h3>
+<p>Our file looks like this</p>
+<pre><code class="hljs">{
+  <span class="hljs-attr">"image_folder"</span> : <span class="hljs-string">"data/images"</span>,
+  <span class="hljs-attr">"label_folder"</span>: <span class="hljs-string">"data/label_images"</span>,
+  <span class="hljs-attr">"max_x_steps"</span>: <span class="hljs-number">2</span>,
+  <span class="hljs-attr">"max_y_steps"</span>: <span class="hljs-number">2</span>,
+  <span class="hljs-attr">"ref_im_scale"</span>: <span class="hljs-number">0.8</span>,
+  <span class="hljs-attr">"lw"</span>: <span class="hljs-number">25</span>,
+  <span class="hljs-attr">"im_order"</span>: <span class="hljs-string">"RGB"</span>,
+  <span class="hljs-attr">"alpha"</span>: <span class="hljs-number">0.5</span>,
+  <span class="hljs-attr">"create_gtiff"</span>: <span class="hljs-string">"true"</span>,
+  <span class="hljs-attr">"apply_mask"</span>: <span class="hljs-string">"None"</span>,
+  <span class="hljs-attr">"medfilt"</span>: <span class="hljs-string">"false"</span>,
+  <span class="hljs-attr">"fact"</span>: <span class="hljs-number">3</span>,
+  <span class="hljs-attr">"classes"</span>: {
+    <span class="hljs-attr">"deep"</span>: <span class="hljs-string">"#2f36aa"</span>,
+    <span class="hljs-attr">"whitewater"</span>: <span class="hljs-string">"#E317CE"</span>,
+    <span class="hljs-attr">"shallow"</span>: <span class="hljs-string">"#b3946b"</span>,
+    <span class="hljs-attr">"no_water"</span>: <span class="hljs-string">"#e35259"</span>
+   }
+}
+</code></pre>
+<p>The <code>image_folder</code> where the images are is <code>&quot;data/images&quot;</code> and the <code>label_folder</code> is <code>&quot;data/label_images&quot;</code>, where the results will be put. To control the size of the labelling window, <code>max_x_steps</code> and <code>max_y_steps</code> are both set to 2, so we'll label 4 windows.</p>
+<p>We set <code>ref_im_scale</code> as 0.8 to control the window size (this value should work for many screen sizes), <code>lw</code> (pen line width) is 25. The image channel order, <code>im_order</code>, is <code>&quot;RGB&quot;</code> and the outplot plot transparency, or <code>alpha</code>, 0.5 (i.e. 50%). We specify <code>create_gtiff</code> as <code>&quot;true&quot;</code> to create a geoTIFF format label output, since our input files are also geoTIFFs.</p>
+<p><code>apply_mask</code> is <code>&quot;None&quot;</code> because we are not applying masks on the image prior to labelling (we do that later).
+We specify <code>medfilt</code> as <code>&quot;false&quot;</code> to suppress median filtering (only use if you have high-frequency noise) and <code>fact</code> as 3, to subsample the image such that it is a third of the original size. It is subsequently scaled up after CRF inference.</p>
+<p>You doodle the classes in the order that you specify them here. The 4 <code>classes</code> listed in this case study represent deep water (cannot see the underlying seabed), whitewater (aerated water from wave breaking), shallow (can see the seabed, including obviously wet terrain), and no water (dry terrain).</p>
+<p>The colour codes associated with each class come from an online hex colour picker such as <a href="https://htmlcolorcodes.com/">here</a>.</p>
+<h3><a class="anchor" aria-hidden="true" id="doodling"></a><a href="#doodling" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Doodling</h3>
+<p>We'll first classify for four classes related to water, as described above. Launch the program by calling the config file you created above:</p>
+<h2><a class="anchor" aria-hidden="true" id="doodle_labellerdocsassetscasestudy2png"></a><a href="#doodle_labellerdocsassetscasestudy2png" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><img src="/doodle_labeller/docs/assets/casestudy2.png" alt=""></h2>
+<p>Below are some examples of doodles. This hopefully gives you a sense of the level of doodling required.</p>
+<p><img src="/doodle_labeller/docs/assets/casestudy3.png" alt=""></p>
+<p><img src="/doodle_labeller/docs/assets/casestudy4.png" alt=""></p>
+<p><img src="/doodle_labeller/docs/assets/casestudy5.png" alt=""></p>
+<p><img src="/doodle_labeller/docs/assets/casestudy6.png" alt=""></p>
+<p><img src="/doodle_labeller/docs/assets/casestudy7.png" alt=""></p>
+<p><img src="/doodle_labeller/docs/assets/casestudy8.png" alt=""></p>
+<p><img src="/doodle_labeller/docs/assets/casestudy9.png" alt=""></p>
+<p>When the last tile of the last image is annotated, the screen will look like this as it starts the inference process:</p>
+<p><img src="/doodle_labeller/docs/assets/casestudy10.png" alt=""></p>
+<p>This is how the screen looks when it is finished - go check the results in <code>data/label_images</code> (if that is what you specified in the config file)</p>
+<h2><a class="anchor" aria-hidden="true" id="doodle_labellerdocsassetscasestudy11png"></a><a href="#doodle_labellerdocsassetscasestudy11png" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><img src="/doodle_labeller/docs/assets/casestudy11.png" alt=""></h2>
+<h3><a class="anchor" aria-hidden="true" id="examining-the-results"></a><a href="#examining-the-results" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Examining the results</h3>
+<p>Below is the transparent overlay printout from one of the images. The first image shows the transparent overlay label image (left) and doodles (right). Looks good.</p>
+<h2><a class="anchor" aria-hidden="true" id="doodle_labellerdocsassetscasestudy12png"></a><a href="#doodle_labellerdocsassetscasestudy12png" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><img src="/doodle_labeller/docs/assets/casestudy12.png" alt=""></h2>
+<p>This image is an estimate of the probability of the above label estimate. Probabilities are high everywhere except a couple of locations near the shoreline.</p>
+<p><img src="/doodle_labeller/docs/assets/casestudy13.png" alt=""></p>
+<h3><a class="anchor" aria-hidden="true" id="doodling-on-second-set-of-classes"></a><a href="#doodling-on-second-set-of-classes" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Doodling on second set of classes</h3>
+<p>Next, we'll label the second set of classes. We deliberately do not specify a <code>do_mask</code> label, because I want to demonstrate how it's ok not to label parts of the scene (in the upcoming case, water) if you're merging those classes in later, which is what we will do.</p>
+<p>This is the new config file, with new classes:</p>
+<pre><code class="hljs">{
+  <span class="hljs-attr">"image_folder"</span> : <span class="hljs-string">"data/images"</span>,
+  <span class="hljs-attr">"label_folder"</span>: <span class="hljs-string">"data/label_images"</span>,
+  <span class="hljs-attr">"max_x_steps"</span>: <span class="hljs-number">4</span>,
+  <span class="hljs-attr">"max_y_steps"</span>: <span class="hljs-number">4</span>,
+  <span class="hljs-attr">"ref_im_scale"</span>: <span class="hljs-number">0.8</span>,
+  <span class="hljs-attr">"lw"</span>: <span class="hljs-number">10</span>,
+  <span class="hljs-attr">"im_order"</span>: <span class="hljs-string">"RGB"</span>,
+  <span class="hljs-attr">"alpha"</span>: <span class="hljs-number">0.5</span>,
+  <span class="hljs-attr">"create_gtiff"</span>: <span class="hljs-string">"false"</span>,
+  <span class="hljs-attr">"medfilt"</span>: <span class="hljs-string">"false"</span>,
+  <span class="hljs-attr">"fact"</span>: <span class="hljs-number">3</span>,
+  <span class="hljs-attr">"classes"</span>: {
+    <span class="hljs-attr">"anthro"</span>: <span class="hljs-string">"#aa352f"</span>,
+    <span class="hljs-attr">"vegetation"</span>: <span class="hljs-string">"#2faa58"</span>,
+    <span class="hljs-attr">"mud"</span>: <span class="hljs-string">"#aa8b2f"</span>,
+    <span class="hljs-attr">"sand"</span>: <span class="hljs-string">"#a0aa2f"</span>,
+    <span class="hljs-attr">"submerged"</span>: <span class="hljs-string">"#84aa2f"</span>,
+    <span class="hljs-attr">"gravel"</span>: <span class="hljs-string">"#186074"</span>,
+    <span class="hljs-attr">"boulder"</span>: <span class="hljs-string">"#4f7373"</span>,
+    <span class="hljs-attr">"wrack_peat"</span>: <span class="hljs-string">"#aa2f9c"</span>,
+    <span class="hljs-attr">"snow_ice"</span>: <span class="hljs-string">"#aa2f69"</span>,
+    <span class="hljs-attr">"shell"</span>: <span class="hljs-string">"#84b1b4"</span>
+   }
+}
+</code></pre>
+<p>Ok, let's go again - some select examples from the process:</p>
+<h2><a class="anchor" aria-hidden="true" id="doodle_labellerdocsassetscasestudy14png"></a><a href="#doodle_labellerdocsassetscasestudy14png" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><img src="/doodle_labeller/docs/assets/casestudy14.png" alt=""></h2>
+<p><img src="/doodle_labeller/docs/assets/casestudy15.png" alt="">
+<img src="/doodle_labeller/docs/assets/casestudy16.png" alt="">
+<img src="/doodle_labeller/docs/assets/casestudy17.png" alt=""></p>
+<hr>
+<h3><a class="anchor" aria-hidden="true" id="examining-the-results-and-merging"></a><a href="#examining-the-results-and-merging" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Examining the results, and merging</h3>
+<p>The label and probability images look reasonable</p>
+<p><img src="/doodle_labeller/docs/assets/casestudy18.png" alt="">
+<img src="/doodle_labeller/docs/assets/casestudy19.png" alt=""></p>
+<hr>
+<p>To merge the 10-class and 4-class label maps together, create a merge config file that lists all classes in the correct order.</p>
+<p>Note this must be carried out on an image by image basis: note that we specify <code>name</code> to be <code>&quot;2017-02-14_5cm_5000_0&quot;</code>. The labels to merge are listed in the order of precedence, in case of overlapping labels.</p>
+<p>The label is identified by the first class only, so we specify <code>to_merge</code> as <code>[&quot;deep&quot;,&quot;anthro&quot;]</code>, then list the classes below in order.</p>
+<p>It does not matter what you call the classes (we use <code>classesA</code> and <code>classesB</code>).</p>
+<pre><code class="hljs">{
+  <span class="hljs-attr">"image_folder"</span> : <span class="hljs-string">"data/images"</span>,
+  <span class="hljs-attr">"label_folder"</span>: <span class="hljs-string">"data/label_images"</span>,
+  <span class="hljs-attr">"im_order"</span>: <span class="hljs-string">"RGB"</span>,
+  <span class="hljs-attr">"alpha"</span>: <span class="hljs-number">0.5</span>,
+  <span class="hljs-attr">"create_gtiff"</span>: <span class="hljs-string">"true"</span>,
+  <span class="hljs-attr">"name"</span>: <span class="hljs-string">"2017-02-14_5cm_5000_0"</span>,
+
+  <span class="hljs-attr">"to_merge"</span>: [<span class="hljs-string">"deep"</span>,<span class="hljs-string">"anthro"</span>],
+
+  <span class="hljs-attr">"classesA"</span>: {
+    <span class="hljs-attr">"deep"</span>: <span class="hljs-string">"#2f36aa"</span>,
+    <span class="hljs-attr">"whitewater"</span>: <span class="hljs-string">"#E317CE"</span>,
+    <span class="hljs-attr">"shallow"</span>: <span class="hljs-string">"#b3946b"</span>,
+    <span class="hljs-attr">"no_water"</span>: <span class="hljs-string">"#e35259"</span>
+  },
+
+  <span class="hljs-attr">"classesB"</span>: {
+    <span class="hljs-attr">"anthro"</span>: <span class="hljs-string">"#aa352f"</span>,
+    <span class="hljs-attr">"vegetation"</span>: <span class="hljs-string">"#2faa58"</span>,
+    <span class="hljs-attr">"mud"</span>: <span class="hljs-string">"#aa8b2f"</span>,
+    <span class="hljs-attr">"sand"</span>: <span class="hljs-string">"#a0aa2f"</span>,
+    <span class="hljs-attr">"submerged_sediment"</span>: <span class="hljs-string">"#84aa2f"</span>,
+    <span class="hljs-attr">"gravel"</span>: <span class="hljs-string">"#186074"</span>,
+    <span class="hljs-attr">"boulder"</span>: <span class="hljs-string">"#4f7373"</span>,
+    <span class="hljs-attr">"wrack_peat"</span>: <span class="hljs-string">"#aa2f9c"</span>,
+    <span class="hljs-attr">"snow_ice"</span>: <span class="hljs-string">"#aa2f69"</span>,
+    <span class="hljs-attr">"shell"</span>: <span class="hljs-string">"#84b1b4"</span>
+   }
+}
+</code></pre>
+<p>Run <code>merge.py</code></p>
+<p><img src="/doodle_labeller/docs/assets/casestudy20.png" alt=""></p>
+<p>Here is the final merged label image overlay:</p>
+<h2><a class="anchor" aria-hidden="true" id="doodle_labellerdocsassetscasestudy21png"></a><a href="#doodle_labellerdocsassetscasestudy21png" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><img src="/doodle_labeller/docs/assets/casestudy21.png" alt=""></h2>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/doodle_labeller/docs/stack"><span class="arrow-prev">← </span><span>Using a `stacked` raster</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#doodle_labellerdocsassetscasestudy2png"><img src="/doodle_labeller/docs/assets/casestudy2.png" alt=""></a></li><li><a href="#doodle_labellerdocsassetscasestudy11png"><img src="/doodle_labeller/docs/assets/casestudy11.png" alt=""></a><ul class="toc-headings"><li><a href="#examining-the-results">Examining the results</a></li></ul></li><li><a href="#doodle_labellerdocsassetscasestudy12png"><img src="/doodle_labeller/docs/assets/casestudy12.png" alt=""></a><ul class="toc-headings"><li><a href="#doodling-on-second-set-of-classes">Doodling on second set of classes</a></li></ul></li><li><a href="#doodle_labellerdocsassetscasestudy14png"><img src="/doodle_labeller/docs/assets/casestudy14.png" alt=""></a><ul class="toc-headings"><li><a href="#examining-the-results-and-merging">Examining the results, and merging</a></li></ul></li><li><a href="#doodle_labellerdocsassetscasestudy21png"><img src="/doodle_labeller/docs/assets/casestudy21.png" alt=""></a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/doodle_labeller/" class="nav-home"><img src="/doodle_labeller/img/favicon.ico" alt="Doodle Labeller (Doodler)" width="66" height="58"/></a><div><h5>Docs</h5><a href="/doodle_labeller/docs/en/install.html">Getting Started</a><a href="/doodle_labeller/docs/en/howto.html">How to Doodle</a><a href="/doodle_labeller/docs/en/api.html">Full user guide</a></div><div><h5>Community</h5><a href="https://stackoverflow.com/questions/tagged/" target="_blank" rel="noreferrer noopener">Stack Overflow</a><a href="https://twitter.com/magic_walnut" target="_blank" rel="noreferrer noopener">Twitter</a></div><div><h5>More</h5><a href="/doodle_labeller/blog">Blog</a><a href="https://github.com/dbuscombe-usgs/doodle_labeller">GitHub</a><a class="github-button" data-icon="octicon-star" data-count-href="/dbuscombe-usgs/docusaurus/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a><div class="social"><a href="https://twitter.com/magic_walnut" class="twitter-follow-button">Follow @magic_walnut</a></div></div></section><a href="https://mardascience.com/" target="_blank" rel="noreferrer noopener" class="fbOpenSource"><img src="/doodle_labeller/img/dash-logo-new.png" alt="Marda Science" width="170" height="45"/></a><section class="copyright">Copyright © 2020 Marda Science, LLC</section></footer></div><script>window.twttr=(function(d,s, id){var js,fjs=d.getElementsByTagName(s)[0],t=window.twttr||{};if(d.getElementById(id))return t;js=d.createElement(s);js.id=id;js.src='https://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js, fjs);t._e = [];t.ready = function(f) {t._e.push(f);};return t;}(document, 'script', 'twitter-wjs'));</script></body></html>
