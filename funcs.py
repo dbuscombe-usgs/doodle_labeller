@@ -310,11 +310,16 @@ def getCRF(img, Lc, config): #, optim):
        # could override a former one. Where no grid cell is encoded
        #  with a label, such as where the above criteria are not met,
        #  the label is the argument maximum for for that cell in the stack.
+
+       if (len(label_lines)==2): #special case of two classes, we average the stack of classes
+          preds
+
+
        res = np.zeros((H,W))
        counter = 1
        for k in range(len(label_lines)):
          if (len(label_lines)==2):
-            res[preds[k,:,:]>=(1/len(label_lines) )] = counter
+            res[preds[:,:,k]>=(1/len(label_lines) )] = counter
          else:
             res[preds[:,:,k]>= 2*(1/len(label_lines)) ] = counter  #.5
          counter += 1
@@ -325,6 +330,7 @@ def getCRF(img, Lc, config): #, optim):
            res[res==0] = np.argmax(preds, axis=-1).T[res==0]
 
        if len(label_lines)==2: #<len(search):
+          res = res.T #transpose binary images
           p = 1-(np.std(preds, axis=0)/len(label_lines))
        else:
           #p = np.max(preds, axis=-1)
@@ -880,9 +886,9 @@ def PlotAndSave(img, resr, Lc, prob, name, config, class_str, profile):
         new_cols.append(col)
     cmap = colors.ListedColormap(new_cols)
 
-    if len(config['classes'])==2:
-        resr[resr==0] = 1
-        resr[resr==2] = 0
+    # if len(config['classes'])==2:
+    #     resr[resr==0] = 1
+    #     resr[resr==2] = 0
 
     fig = plt.figure()
     ax1 = fig.add_subplot(121) #sp + 1)
