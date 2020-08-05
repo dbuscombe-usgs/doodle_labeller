@@ -4,7 +4,7 @@
         <title>Doodle Labeller (Doodler) Blog</title>
         <link>https://dbuscombe-usgs.github.io/doodle_labeller/blog</link>
         <description>The best place to stay up-to-date with the latest Doodle Labeller (Doodler) news and events.</description>
-        <lastBuildDate>Sat, 01 Aug 2020 06:00:00 GMT</lastBuildDate>
+        <lastBuildDate>Tue, 04 Aug 2020 06:00:00 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <image>
@@ -13,6 +13,13 @@
             <link>https://dbuscombe-usgs.github.io/doodle_labeller/blog</link>
         </image>
         <copyright>Copyright © 2020 Marda Science, LLC</copyright>
+        <item>
+            <title><![CDATA[What makes a "class"?]]></title>
+            <link>https://dbuscombe-usgs.github.io/doodle_labeller/blog/2020/08/04/blog-post.html</link>
+            <guid>https://dbuscombe-usgs.github.io/doodle_labeller/blog/2020/08/04/blog-post.html</guid>
+            <pubDate>Tue, 04 Aug 2020 06:00:00 GMT</pubDate>
+            <description><![CDATA[<p><code>Doodler</code> segments images into &quot;classes&quot; that are discrete labels that you define to represent and reduce the dimensionality of features and objects in your imagery.</p> <p>Each class really represents a spectrum of textures, colors, and spatial ext...</p>]]></description>
+        </item>
         <item>
             <title><![CDATA[Splitting up large geoTIFF orthomosaics]]></title>
             <link>https://dbuscombe-usgs.github.io/doodle_labeller/blog/2020/08/01/blog-post.html</link>

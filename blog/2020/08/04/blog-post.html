@@ -1,0 +1,68 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>What makes a &quot;class&quot;? · Doodle Labeller (Doodler)</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="`Doodler` segments images into &quot;classes&quot; that are discrete labels that you define to represent and reduce the dimensionality of features and objects in your imagery."/><meta name="docsearch:language" content="en"/><meta property="og:title" content="What makes a &quot;class&quot;? · Doodle Labeller (Doodler)"/><meta property="og:type" content="website"/><meta property="og:url" content="https://dbuscombe-usgs.github.io/doodle_labeller/blog/2020/08/04/blog-post"/><meta property="og:description" content="`Doodler` segments images into &quot;classes&quot; that are discrete labels that you define to represent and reduce the dimensionality of features and objects in your imagery."/><meta property="og:image" content="https://dbuscombe-usgs.github.io/doodle_labeller/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://dbuscombe-usgs.github.io/doodle_labeller/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/doodle_labeller/img/favicon.ico"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><link rel="alternate" type="application/atom+xml" href="https://dbuscombe-usgs.github.io/doodle_labeller/blog/atom.xml" title="Doodle Labeller (Doodler) Blog ATOM Feed"/><link rel="alternate" type="application/rss+xml" href="https://dbuscombe-usgs.github.io/doodle_labeller/blog/feed.xml" title="Doodle Labeller (Doodler) Blog RSS Feed"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/doodle_labeller/js/scrollSpy.js"></script><link rel="stylesheet" href="/doodle_labeller/css/main.css"/><script src="/doodle_labeller/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/doodle_labeller/"><img class="logo" src="/doodle_labeller/img/favicon.ico" alt="Doodle Labeller (Doodler)"/><h2 class="headerTitleWithLogo">Doodle Labeller (Doodler)</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class=""><a href="/doodle_labeller/docs/install" target="_self">Get Started</a></li><li class=""><a href="/doodle_labeller/docs/api" target="_self">Guide</a></li><li class="siteNavGroupActive"><a href="/doodle_labeller/blog/" target="_self">Blog</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Recent Posts</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Recent Posts</h3><ul class=""><li class="navListItem navListItemActive"><a class="navItem" href="/doodle_labeller/blog/2020/08/04/blog-post">What makes a &quot;class&quot;?</a></li><li class="navListItem"><a class="navItem" href="/doodle_labeller/blog/2020/08/01/blog-post">Splitting up large geoTIFF orthomosaics</a></li><li class="navListItem"><a class="navItem" href="/doodle_labeller/blog/2020/07/31/blog-post">merge a 3-band and 1-band image</a></li><li class="navListItem"><a class="navItem" href="/doodle_labeller/blog/2020/07/30/blog-post">no spaces in filenames!</a></li><li class="navListItem"><a class="navItem" href="/doodle_labeller/blog/2020/07/29/blog-post">batch &quot;redoing&quot;</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer postContainer blogContainer"><div class="wrapper"><div class="lonePost"><div class="post"><header class="postHeader"><h1 class="postHeaderTitle"><a href="/doodle_labeller/blog/2020/08/04/blog-post">What makes a &quot;class&quot;?</a></h1><p class="post-meta">August 4, 2020</p><div class="authorBlock"><p class="post-authorName"><a href="http://twitter.com/magic_walnut" target="_blank" rel="noreferrer noopener">Dan Buscombe</a></p></div></header><div><span><p><code>Doodler</code> segments images into &quot;classes&quot; that are discrete labels that you define to represent and reduce the dimensionality of features and objects in your imagery.</p>
+<p>Each class really represents a spectrum of textures, colors, and spatial extents. It can be difficult to define a good set, but the golden rule (in my humble opinion) is that each class in the set of classes should represent a spectrum of image features that collectively have much greater inter-class variability than intra-class variability.</p>
+<p>That can be difficult to define in practice with generality, but here's a tip: imagine a really low- (coarse-) resolution version of your image (or make one!) and ask yourself, &quot;are there are two sets of features that could be easily misconstrued as being in the same class, but are in fact two separate classes?&quot; If the answer in yes, ideally you should lump those classes into a merged class. If your intended outcome dictates that's not possible to do, ask yourself if the two classes could be broken up further, say into 3 or 4 classes, to change your answer to the above question?</p>
+<p>In general, <code>doodler</code> is optimized for classes that are relatively large (in terms of contiguous spatial extent) and distinct from one another. See examples in the gallery and elsewhere on this website. However, you can change that behavior by modifying the values of the hyperparameters <code>theta_col</code> and <code>compat_col</code> in your config file. Also, note that the CRF inferences are averaged using weights based on the relative frequency of the classes in your contributed doodles.</p>
+<p>You can have any number of classes (well, 2 or more, with the two classes case styled as <code>something</code> and <code>other</code>) but note that increasing the number of classes also increases the amount of time it takes to interact with the program, since each class must be either labelled or actively skipped.</p>
+<p>Be prepared to experiment with classes - how well do they work on a small subset of your imagery? Look at the unusual images in your set and and decide if there is a class there you hadn't previously thought of. If you can't decide whether to lump or split certain classes or sets of classes, make separate config files with the different class lists, <code>doodle</code> using the first config file, then run <code>doodle</code> again by passing it the other config file(s) with the <code>npy</code> file you generated on the first go, using the <code>-f</code> flag.</p>
+<p>So, the full workflow:</p>
+<p><code>python doodler.py -c config1.json</code> (<code>config1.json</code> has the first set of classes)</p>
+<p>then move your outputs in <code>data/label_images</code>, <strong>except the .npy file(s)</strong>, to another folder, and run <code>doodler</code> again, this time with a different config file and the npy file</p>
+<p><code>python doodler.py -c config2.json -f data/label_image/my_npy_file.npy</code> (<code>config2.json</code> has the second set of classes)</p>
+<p>and repeat through all your config files with different sets of classes.</p>
+</span></div></div><div class="blogSocialSection"></div></div><div class="blog-recent"><a class="button" href="/doodle_labeller/blog/">Recent Posts</a></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/doodle_labeller/" class="nav-home"><img src="/doodle_labeller/img/favicon.ico" alt="Doodle Labeller (Doodler)" width="66" height="58"/></a><div><h5>Docs</h5><a href="/doodle_labeller/docs/en/install.html">Getting Started</a><a href="/doodle_labeller/docs/en/howto.html">How to Doodle</a><a href="/doodle_labeller/docs/en/api.html">Full user guide</a></div><div><h5>Community</h5><a href="https://stackoverflow.com/questions/tagged/" target="_blank" rel="noreferrer noopener">Stack Overflow</a><a href="https://twitter.com/magic_walnut" target="_blank" rel="noreferrer noopener">Twitter</a></div><div><h5>More</h5><a href="/doodle_labeller/blog">Blog</a><a href="https://github.com/dbuscombe-usgs/doodle_labeller">GitHub</a><a class="github-button" data-icon="octicon-star" data-count-href="/dbuscombe-usgs/docusaurus/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a><div class="social"><a href="https://twitter.com/magic_walnut" class="twitter-follow-button">Follow @magic_walnut</a></div></div></section><a href="https://mardascience.com/" target="_blank" rel="noreferrer noopener" class="fbOpenSource"><img src="/doodle_labeller/img/dash-logo-new.png" alt="Marda Science" width="170" height="45"/></a><section class="copyright">Copyright © 2020 Marda Science, LLC</section></footer></div><script>window.twttr=(function(d,s, id){var js,fjs=d.getElementsByTagName(s)[0],t=window.twttr||{};if(d.getElementById(id))return t;js=d.createElement(s);js.id=id;js.src='https://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js, fjs);t._e = [];t.ready = function(f) {t._e.push(f);};return t;}(document, 'script', 'twitter-wjs'));</script></body></html>

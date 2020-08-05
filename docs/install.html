@@ -60,6 +60,28 @@
 <h3><a class="anchor" aria-hidden="true" id="clone-the-github-repo"></a><a href="#clone-the-github-repo" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Clone the github repo</h3>
 <pre><code class="hljs">git <span class="hljs-keyword">clone</span> <span class="hljs-title">--depth</span> <span class="hljs-number">1</span> https://github.com/dbuscombe-usgs/doodle_labeller.git
 </code></pre>
+<p>There are a lot of folders and files when you clone the repository and you only need to know about some of them. You can ignore</p>
+<ul>
+<li>everything inside <code>__pycache__</code></li>
+<li>everything inside <code>website</code> and <code>docs</code> (unless you plan to contribute and submit a pull request)</li>
+<li><code>Dockerfile</code> and <code>docker-compose.yml</code> (they are for building the website)</li>
+</ul>
+<p>The following files are python 'scripts' that you run from the command line</p>
+<ul>
+<li><code>doodler.py</code>: the main program you call to annotate on imagery</li>
+<li><code>merge.py</code>: the program you call to merge multiple sets of label images</li>
+</ul>
+<p>The following files are for information and for internal use by the other programs:</p>
+<ul>
+<li><code>README.md</code> (this file)</li>
+<li><code>funcs.py</code></li>
+</ul>
+<p>The <code>doodler.yml</code> is used to install a conda environment on your computer - see below for more details. What remains are three folders:</p>
+<ul>
+<li><code>config</code>: contains config files, written by you to use with the program <a href="api#make-a-configjson-file">(see here)</a></li>
+<li><code>data</code>: contains input data (images) and output data (label images)</li>
+<li><code>examples</code>: some example outputs</li>
+</ul>
 <h3><a class="anchor" aria-hidden="true" id="create-a-conda-environment"></a><a href="#create-a-conda-environment" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Create a conda environment</h3>
 <p>If you are a regular conda user, now would be a good time to</p>
 <pre><code class="hljs">conda clean <span class="hljs-comment">--all</span>
@@ -76,4 +98,21 @@ conda <span class="hljs-keyword">update</span> anaconda
 <p>If you are a Windows user (only) who wishes to use unix style commands, install <code>m2-base</code></p>
 <pre><code class="hljs">conda <span class="hljs-keyword">install </span>m2-<span class="hljs-keyword">base
 </span></code></pre>
-</span></div></article></div><div class="docs-prevnext"><a class="docs-next button" href="/doodle_labeller/docs/use"><span>How to Use</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/doodle_labeller/" class="nav-home"><img src="/doodle_labeller/img/favicon.ico" alt="Doodle Labeller (Doodler)" width="66" height="58"/></a><div><h5>Docs</h5><a href="/doodle_labeller/docs/en/install.html">Getting Started</a><a href="/doodle_labeller/docs/en/howto.html">How to Doodle</a><a href="/doodle_labeller/docs/en/api.html">Full user guide</a></div><div><h5>Community</h5><a href="https://stackoverflow.com/questions/tagged/" target="_blank" rel="noreferrer noopener">Stack Overflow</a><a href="https://twitter.com/magic_walnut" target="_blank" rel="noreferrer noopener">Twitter</a></div><div><h5>More</h5><a href="/doodle_labeller/blog">Blog</a><a href="https://github.com/dbuscombe-usgs/doodle_labeller">GitHub</a><a class="github-button" data-icon="octicon-star" data-count-href="/dbuscombe-usgs/docusaurus/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a><div class="social"><a href="https://twitter.com/magic_walnut" class="twitter-follow-button">Follow @magic_walnut</a></div></div></section><a href="https://mardascience.com/" target="_blank" rel="noreferrer noopener" class="fbOpenSource"><img src="/doodle_labeller/img/dash-logo-new.png" alt="Marda Science" width="170" height="45"/></a><section class="copyright">Copyright © 2020 Marda Science, LLC</section></footer></div><script>window.twttr=(function(d,s, id){var js,fjs=d.getElementsByTagName(s)[0],t=window.twttr||{};if(d.getElementById(id))return t;js=d.createElement(s);js.id=id;js.src='https://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js, fjs);t._e = [];t.ready = function(f) {t._e.push(f);};return t;}(document, 'script', 'twitter-wjs'));</script></body></html>
+<p>A video is available that covers the installation process:</p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/pCVOs8AWx78" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<h3><a class="anchor" aria-hidden="true" id="updating-the-software"></a><a href="#updating-the-software" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Updating the software.</h3>
+<p>Occasionally, the software is updated. If you <code>watch</code> the repository on <a href="https://github.com/dbuscombe-usgs/doodle_labeller">github</a>, you can receive alerts about when this happens.</p>
+<p>It is best practice to move your images from <code>data/images</code> and outputs from <code>data/label_images</code>. For example, you could create a separate folder of (e.g. “images_done”) inside <code>data</code> or another location.</p>
+<p>For most users who have not modified the contents from the last <code>git pull</code>, to update should be a simple matter of carrying out another</p>
+<p><code>git pull</code></p>
+<p>However, when you have changes on your working copy, from command line use <a href="https://git-scm.com/docs/git-stash">git stash</a>:</p>
+<p><code>git stash</code></p>
+<p>If you need to see what is in your stash, use:</p>
+<p><code>git stash list</code></p>
+<p>This will stash your changes and clear your status report. Next do:</p>
+<p><code>git pull</code></p>
+<p>This will apply stashed changes back to working copy and remove the changes from stash unless you have conflicts. In the case of conflict, they will stay in stash so you can start over if needed:</p>
+<p><code>git stash pop</code></p>
+<p>A one-liner with no stash checking is:</p>
+<p><code>git stash &amp;&amp; git pull &amp;&amp; git stash pop</code></p>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 8/1/2020 by dbuscombe-usgs</em></div><div class="docs-prevnext"><a class="docs-next button" href="/doodle_labeller/docs/use"><span>How to Use</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/doodle_labeller/" class="nav-home"><img src="/doodle_labeller/img/favicon.ico" alt="Doodle Labeller (Doodler)" width="66" height="58"/></a><div><h5>Docs</h5><a href="/doodle_labeller/docs/en/install.html">Getting Started</a><a href="/doodle_labeller/docs/en/howto.html">How to Doodle</a><a href="/doodle_labeller/docs/en/api.html">Full user guide</a></div><div><h5>Community</h5><a href="https://stackoverflow.com/questions/tagged/" target="_blank" rel="noreferrer noopener">Stack Overflow</a><a href="https://twitter.com/magic_walnut" target="_blank" rel="noreferrer noopener">Twitter</a></div><div><h5>More</h5><a href="/doodle_labeller/blog">Blog</a><a href="https://github.com/dbuscombe-usgs/doodle_labeller">GitHub</a><a class="github-button" data-icon="octicon-star" data-count-href="/dbuscombe-usgs/docusaurus/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a><div class="social"><a href="https://twitter.com/magic_walnut" class="twitter-follow-button">Follow @magic_walnut</a></div></div></section><a href="https://mardascience.com/" target="_blank" rel="noreferrer noopener" class="fbOpenSource"><img src="/doodle_labeller/img/dash-logo-new.png" alt="Marda Science" width="170" height="45"/></a><section class="copyright">Copyright © 2020 Marda Science, LLC</section></footer></div><script>window.twttr=(function(d,s, id){var js,fjs=d.getElementsByTagName(s)[0],t=window.twttr||{};if(d.getElementById(id))return t;js=d.createElement(s);js.id=id;js.src='https://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js, fjs);t._e = [];t.ready = function(f) {t._e.push(f);};return t;}(document, 'script', 'twitter-wjs'));</script></body></html>
